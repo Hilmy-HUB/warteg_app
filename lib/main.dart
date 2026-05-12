@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:warteg_app/config/supabase_config.dart';
+import 'package:warteg_app/screen/detail_product_page.dart';
 import 'package:warteg_app/screen/home.dart';
 import 'package:warteg_app/screen/landing_page.dart';
 import 'package:warteg_app/screen/signin_page.dart';
@@ -49,7 +50,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: WelcomePage(),
+      home: Home(),
     );
   }
 }

@@ -24,7 +24,7 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Container(
-            padding: EdgeInsets.symmetric(vertical: 20),
+            padding: const EdgeInsets.symmetric(vertical: 20),
             child: Column(
               children: [
                 // ==========================================
@@ -34,17 +34,18 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
                     children: [
-                      // Search Bar (pakai Expanded agar memakan sisa ruang di sebelah kiri)
                       Expanded(
                         child: Container(
                           height: 45,
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(color: Colors.grey.shade300),
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                            ),
                           ),
                           child: TextField(
-                            readOnly: true, // Hanya sebagai tombol pajangan
+                            readOnly: true,
                             onTap: () {
                               if (widget.onSearchTapped != null) {
                                 widget.onSearchTapped!();
@@ -71,13 +72,10 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
 
-                      const SizedBox(
-                        width: 15,
-                      ), // Jarak antara search bar dan alamat
-                      // Bagian Alamat di Kanan
+                      const SizedBox(width: 15),
+
                       Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.end, // Rata kanan
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
                             "Lokasi Anda",
@@ -112,9 +110,10 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
 
-                const SizedBox(height: 25), // Jarak sebelum carousel
+                const SizedBox(height: 25),
+
                 // ==========================================
-                // 2. CAROUSEL SLIDER & BANNER
+                // 2. CAROUSEL SLIDER
                 // ==========================================
                 CarouselSlider(
                   items: bannerImages.map((imageUrl) {
@@ -128,20 +127,10 @@ class _HomePageState extends State<HomePage> {
                             width: MediaQuery.of(context).size.width * 0.9,
                             margin: const EdgeInsets.symmetric(horizontal: 5),
                             decoration: BoxDecoration(
-                              boxShadow: [
-                                // BoxShadow(
-                                //   color: ColorTheme.textPrimary.withOpacity(0.1),
-                                //   offset: Offset(0, 8),
-                                //   blurRadius: 15,
-                                //   spreadRadius: -3,
-                                // )
-                              ],
-                              // border: Border.all(color: ColorTheme.primaryColor,width: 2),
                               borderRadius: BorderRadius.circular(10),
                               image: DecorationImage(
                                 image: AssetImage(imageUrl),
-                                fit: BoxFit
-                                    .cover, // Tambahan fit agar gambar tidak gepeng
+                                fit: BoxFit.cover,
                               ),
                             ),
                           ),
@@ -164,16 +153,23 @@ class _HomePageState extends State<HomePage> {
                     },
                   ),
                 ),
+
+                // ==========================================
+                // INDICATOR
+                // ==========================================
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: bannerImages.asMap().entries.map((entry) {
                     final isActive = _halamanAktif == entry.key;
 
                     return AnimatedContainer(
-                      duration: Duration(milliseconds: 300),
+                      duration: const Duration(milliseconds: 300),
                       width: isActive ? 16 : 6,
                       height: 6,
-                      margin: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
                         color: ColorTheme.primaryColor.withOpacity(
@@ -183,16 +179,17 @@ class _HomePageState extends State<HomePage> {
                     );
                   }).toList(),
                 ),
+
                 const SizedBox(height: 20),
 
                 // ==========================================
-                // 3. DAFTAR MENU RECOMMENDED
+                // 3. RECOMMENDED
                 // ==========================================
                 Container(
-                  margin: EdgeInsets.symmetric(horizontal: 20),
-                  child: Align(
-                    alignment: AlignmentGeometry.topStart,
-                    child: const Text(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  child: const Align(
+                    alignment: Alignment.topLeft,
+                    child: Text(
                       'Recommended',
                       style: TextStyle(
                         fontFamily: 'Poppins',
@@ -202,9 +199,13 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
+
                 Padding(
-                  // PERBAIKAN: EdgeInsetsGeometry diganti EdgeInsets
-                  padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+                  padding: const EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 10,
+                  ),
                   child: SizedBox(
                     height: 200,
                     child: ListView.builder(
@@ -212,21 +213,25 @@ class _HomePageState extends State<HomePage> {
                       itemCount: recommendedMenu.length,
                       itemBuilder: (context, index) {
                         final dataMenuSatuIni = recommendedMenu[index];
-                        return MenuCard(menu: dataMenuSatuIni);
+
+                        return MenuCard(
+                          menu: dataMenuSatuIni,
+                        );
                       },
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 20),
 
                 // ==========================================
-                // 4. DAFTAR MENU TOP OF WEEK
+                // 4. TOP OF WEEK
                 // ==========================================
                 Container(
-                  margin: EdgeInsets.symmetric(horizontal: 20),
-                  child: Align(
-                    alignment: AlignmentGeometry.topStart,
-                    child: const Text(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  child: const Align(
+                    alignment: Alignment.topLeft,
+                    child: Text(
                       'Top of Week',
                       style: TextStyle(
                         fontFamily: 'Poppins',
@@ -236,9 +241,13 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
+
                 Padding(
-                  // PERBAIKAN: EdgeInsetsGeometry diganti EdgeInsets
-                  padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+                  padding: const EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 10,
+                  ),
                   child: SizedBox(
                     height: 200,
                     child: ListView.builder(
@@ -246,7 +255,10 @@ class _HomePageState extends State<HomePage> {
                       itemCount: topOfWeekMenu.length,
                       itemBuilder: (context, index) {
                         final dataMenuSatuIni = topOfWeekMenu[index];
-                        return MenuCard(menu: dataMenuSatuIni);
+
+                        return MenuCard(
+                          menu: dataMenuSatuIni,
+                        );
                       },
                     ),
                   ),
