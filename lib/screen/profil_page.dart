@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:warteg_app/theme/color_theme.dart';
 
 class ProfilPage extends StatelessWidget {
   const ProfilPage({Key? key}) : super(key: key);
@@ -6,173 +7,365 @@ class ProfilPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Warna latar belakang krem (cream) senada dengan gambar
-      backgroundColor: Colors.amber[50],
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
+      backgroundColor: ColorTheme.backgroundColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // ==========================================
+              // HEADER
+              // ==========================================
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 25, 20, 30),
+                decoration: const BoxDecoration(
+                  color: ColorTheme.primaryColor,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // TITLE
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "My Profile",
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
 
-            // ==========================================
-            // 1. KARTU PROFIL (ORANYE)
-            // ==========================================
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFCA847), // Warna oranye kartu
-                borderRadius: BorderRadius.circular(15),
+                        Icon(
+                          Icons.notifications_none_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    // PROFILE CARD
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.15),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          // PHOTO
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 3,
+                              ),
+                            ),
+                            child: const CircleAvatar(
+                              radius: 38,
+                              backgroundImage: NetworkImage(
+                                'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80',
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 18),
+
+                          // USER INFO
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Nanda Septiani",
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 5),
+
+                                Text(
+                                  "nandaseptiani@gmail.com",
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 12,
+                                    color: Colors.white.withOpacity(0.85),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.edit_outlined,
+                                        size: 16,
+                                        color: ColorTheme.primaryColor,
+                                      ),
+
+                                      SizedBox(width: 6),
+
+                                      Text(
+                                        "Edit Profile",
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                          color: ColorTheme.primaryColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
-                  // Foto Profil
-                  const CircleAvatar(
-                    radius: 30,
-                    // Menggunakan gambar placeholder dari internet (bisa diganti asset lokal)
-                    backgroundImage: NetworkImage(
-                      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80'
+
+              const SizedBox(height: 25),
+
+              // ==========================================
+              // ACCOUNT SECTION
+              // ==========================================
+              _buildSectionTitle("Account"),
+
+              _buildMenuItem(
+                icon: Icons.person_outline_rounded,
+                title: "My Account",
+                subtitle: "Make changes to your account",
+              ),
+
+              _buildMenuItem(
+                icon: Icons.credit_card_rounded,
+                title: "Payments",
+                subtitle: "Manage your billings and payments",
+              ),
+
+              _buildMenuItem(
+                icon: Icons.discount_outlined,
+                title: "Promo",
+                subtitle: "Apply coupon codes and earn discount",
+              ),
+
+              _buildMenuItem(
+                icon: Icons.restaurant_menu_rounded,
+                title: "Subscriptions",
+                subtitle: "Manage your meal plans",
+              ),
+
+              const SizedBox(height: 10),
+
+              // ==========================================
+              // GENERAL SECTION
+              // ==========================================
+              _buildSectionTitle("General"),
+
+              _buildMenuItem(
+                icon: Icons.accessibility_new_rounded,
+                title: "Accessibility",
+                subtitle: "Customize your experience",
+              ),
+
+              _buildMenuItem(
+                icon: Icons.help_outline_rounded,
+                title: "Help & Support",
+                subtitle: "Get help from customer service",
+              ),
+
+              _buildMenuItem(
+                icon: Icons.info_outline_rounded,
+                title: "About App",
+                subtitle: "Version 1.0.0",
+              ),
+
+              const SizedBox(height: 10),
+
+              // ==========================================
+              // LOGOUT BUTTON
+              // ==========================================
+              Padding(
+                padding: const EdgeInsets.only(right: 20,left: 20, bottom: 55),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () {},
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.logout_rounded,
+                          color: Colors.red,
+                        ),
+
+                        SizedBox(width: 15),
+
+                        Expanded(
+                          child: Text(
+                            "Log Out",
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ),
+
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 16,
+                          color: Colors.red,
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 15),
-                  
-                  // Nama dan Tombol Edit
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Nanda septiani",
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        "Edit profile",
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12,
-                          color: Colors.red[700], // Warna merah bata
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 25),
-
-            // ==========================================
-            // 2. DAFTAR MENU PENGATURAN
-            // ==========================================
-            _buildMenuItem(
-              icon: Icons.person_outline,
-              title: "My Account",
-              subtitle: "Make changes to your account",
-            ),
-            _buildMenuItem(
-              icon: Icons.credit_card,
-              title: "Payments",
-              subtitle: "Manage your billings and payments",
-            ),
-            _buildMenuItem(
-              icon: Icons.percent,
-              title: "Promo",
-              subtitle: "Apply coupon codes and earn discount",
-            ),
-            _buildMenuItem(
-              icon: Icons.lock_outline,
-              title: "Subcriptions",
-              subtitle: "Manage your meal plans",
-            ),
-            _buildMenuItem(
-              icon: Icons.person_off_outlined,
-              title: "Log Out",
-              subtitle: "Further secure your account for safety",
-            ),
-            
-            // Dua menu terakhir tidak memiliki subtitle
-            _buildMenuItem(
-              icon: Icons.accessibility_new,
-              title: "Accessibility",
-            ),
-            _buildMenuItem(
-              icon: Icons.menu,
-              title: "Help and Support",
-            ),
-            
-            const SizedBox(height: 40), // Jarak aman ke bottom nav
-          ],
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
   }
 
   // ==========================================
-  // WIDGET KUSTOM UNTUK BARIS MENU (REUSABLE)
+  // SECTION TITLE
   // ==========================================
-  // Dibuat sebagai fungsi agar kodenya tidak panjang dan berulang-ulang
-  Widget _buildMenuItem({
-    required IconData icon, 
-    required String title, 
-    String? subtitle // Subtitle opsional (bisa kosong)
-  }) {
-    return InkWell( // Agar ada efek klik
-      onTap: () {
-        print("Menu $title ditekan");
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          children: [
-            // Ikon Lingkaran Oranye
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                color: Color(0xFFFCA847), // Warna oranye
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: Colors.black87, size: 20),
-            ),
-            const SizedBox(width: 15),
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 5, 20, 15),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          title,
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: Colors.grey[700],
+          ),
+        ),
+      ),
+    );
+  }
 
-            // Teks Judul dan Subjudul
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  // Hanya tampilkan subtitle jika datanya tidak kosong
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+  // ==========================================
+  // MENU ITEM
+  // ==========================================
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          print("$title ditekan");
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              // ICON
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: ColorTheme.primaryColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(
+                  icon,
+                  color: ColorTheme.primaryColor,
+                  size: 22,
+                ),
+              ),
+
+              const SizedBox(width: 15),
+
+              // TEXT
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      subtitle,
-                      style: TextStyle(
+                      title,
+                      style: const TextStyle(
                         fontFamily: 'Poppins',
-                        fontSize: 12,
-                        color: Colors.grey[600],
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
                       ),
                     ),
-                  ]
-                ],
-              ),
-            ),
 
-            // Ikon Panah ke Kanan (Chevron)
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[800]),
-          ],
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 4),
+
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: Colors.grey[500],
+              ),
+            ],
+          ),
         ),
       ),
     );
