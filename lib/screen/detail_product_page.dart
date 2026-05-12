@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:warteg_app/model/cart_item_model.dart';
 import 'package:warteg_app/model/product_model.dart';
+import 'package:warteg_app/screen/cart_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 
 class DetailProductPage extends StatefulWidget {
@@ -509,7 +510,7 @@ class _DetailProductPageState extends State<DetailProductPage> {
                   // Tombol keranjang
                   InkWell(
                     borderRadius: BorderRadius.circular(50),
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CartPage())),
                     child: Container(
                       padding: const EdgeInsets.all(9),
                       decoration: BoxDecoration(

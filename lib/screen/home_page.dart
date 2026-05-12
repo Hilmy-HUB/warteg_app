@@ -247,6 +247,7 @@ class _HomePageState extends State<HomePage> {
                     left: 20,
                     right: 20,
                     top: 10,
+                    bottom: 70
                   ),
                   child: SizedBox(
                     height: 200,
