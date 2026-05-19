@@ -14,13 +14,23 @@ class SignupPage extends ConsumerStatefulWidget {
 }
 
 class _SignupPageState extends ConsumerState<SignupPage> {
+
+  // PINDAHKAN CONTROLLER KE SINI
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
-
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
 
     final Size screen = MediaQuery.of(context).size;
     final double w = screen.width;
@@ -56,6 +66,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+
                   // --- FORM CARD ---
                   Container(
                     width: double.infinity,
@@ -77,24 +88,35 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                             color: ColorTheme.textSecondary,
                           ),
                         ),
+
                         SizedBox(height: spacingLg),
+
                         CustomTextField(
                           controller: nameController,
                           judul: "Username",
                           petunjuk: "Your name",
                         ),
+
                         CustomTextField(
                           controller: emailController,
                           judul: "Email",
                           petunjuk: "Your email",
                         ),
+
                         CustomTextField(
                           controller: passwordController,
                           judul: "Password",
                           petunjuk: "***",
                           isPassword: true,
                         ),
-                        if (state.isLoading) const CircularProgressIndicator(),
+
+                        if (state.isLoading)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 12),
+                            child: Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -110,6 +132,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                       color: Colors.grey[700],
                     ),
                   ),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -127,7 +150,12 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           style: TextStyle(fontSize: bodyFontSize),
                         ),
                       ),
-                      Text('and', style: TextStyle(fontSize: bodyFontSize)),
+
+                      Text(
+                        'and',
+                        style: TextStyle(fontSize: bodyFontSize),
+                      ),
+
                       TextButton(
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
@@ -159,15 +187,87 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                         backgroundColor: ColorTheme.buttonPrimary,
                         elevation: 0,
                       ),
+
                       onPressed: () async {
-                        await ref
+
+                        // VALIDASI KOSONG
+                        if (nameController.text.trim().isEmpty ||
+                            emailController.text.trim().isEmpty ||
+                            passwordController.text.trim().isEmpty) {
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Semua field wajib diisi"),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+
+                          return;
+                        }
+
+                        // VALIDASI EMAIL
+                        if (!emailController.text.contains("@")) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Email tidak valid"),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+
+                          return;
+                        }
+
+                        // VALIDASI PASSWORD
+                        if (passwordController.text.length < 8) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "Password minimal 8 karakter",
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+
+                          return;
+                        }
+
+                        // REGISTER
+                        final result = await ref
                             .read(authControllerProvider.notifier)
                             .register(
-                              emailController.text,
-                              passwordController.text,
+                              nameController.text.trim(),
+                              emailController.text.trim(),
+                              passwordController.text.trim(),
                             );
-                        Navigator.pop(context);
+
+                        // ERROR
+                        if (result != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(result),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+
+                        // SUCCESS
+                        else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Register berhasil"),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SigninPage(),
+                            ),
+                          );
+                        }
                       },
+
                       child: Text(
                         'Continue',
                         style: TextStyle(
@@ -191,6 +291,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           color: Colors.grey[700],
                         ),
                       ),
+
                       TextButton(
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
@@ -199,6 +300,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           ),
                           foregroundColor: Colors.red,
                         ),
+
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -207,6 +309,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                             ),
                           );
                         },
+
                         child: Text(
                           'Sign in',
                           style: TextStyle(fontSize: bodyFontSize),
@@ -221,8 +324,12 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   Row(
                     children: [
                       Expanded(
-                        child: Divider(thickness: 0.8, color: Colors.grey[350]),
+                        child: Divider(
+                          thickness: 0.8,
+                          color: Colors.grey[350],
+                        ),
                       ),
+
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12.0),
                         child: Text(
@@ -233,8 +340,12 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           ),
                         ),
                       ),
+
                       Expanded(
-                        child: Divider(thickness: 0.8, color: Colors.grey[350]),
+                        child: Divider(
+                          thickness: 0.8,
+                          color: Colors.grey[350],
+                        ),
                       ),
                     ],
                   ),
@@ -256,7 +367,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           onPressed: () {},
                         ),
                       ),
+
                       const SizedBox(width: 12),
+
                       Expanded(
                         child: _SocialButton(
                           icon: const FaIcon(

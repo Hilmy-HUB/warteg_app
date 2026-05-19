@@ -103,10 +103,6 @@ class LandingPage extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: ColorTheme.buttonPrimary.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
                         child: Text(
                           'Log in or Create an account',
                           style: TextStyle(

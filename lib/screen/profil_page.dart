@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:warteg_app/controller/auth_controller.dart';
+import 'package:warteg_app/screen/landing_page.dart';
+import 'package:warteg_app/screen/myaccount.dart';
+// import 'package:warteg_app/screen/signin_page.dart';
+// import 'package:warteg_app/screen/welcome_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 
-class ProfilPage extends StatelessWidget {
+class ProfilPage extends ConsumerWidget {
   const ProfilPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+
     return Scaffold(
       backgroundColor: ColorTheme.backgroundColor,
       body: SafeArea(
@@ -67,10 +75,7 @@ class ProfilPage extends StatelessWidget {
                           Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 3,
-                              ),
+                              border: Border.all(color: Colors.white, width: 3),
                             ),
                             child: const CircleAvatar(
                               radius: 38,
@@ -87,9 +92,10 @@ class ProfilPage extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  "Nanda Septiani",
-                                  style: TextStyle(
+                                // USERNAME
+                                Text(
+                                  user?["username"] ?? "Guest User",
+                                  style: const TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -99,47 +105,13 @@ class ProfilPage extends StatelessWidget {
 
                                 const SizedBox(height: 5),
 
+                                // EMAIL
                                 Text(
-                                  "nandaseptiani@gmail.com",
+                                  user?["email"] ?? "guest@gmail.com",
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 12,
                                     color: Colors.white.withOpacity(0.85),
-                                  ),
-                                ),
-
-                                const SizedBox(height: 12),
-
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.edit_outlined,
-                                        size: 16,
-                                        color: ColorTheme.primaryColor,
-                                      ),
-
-                                      SizedBox(width: 6),
-
-                                      Text(
-                                        "Edit Profile",
-                                        style: TextStyle(
-                                          fontFamily: 'Poppins',
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                          color: ColorTheme.primaryColor,
-                                        ),
-                                      ),
-                                    ],
                                   ),
                                 ),
                               ],
@@ -163,6 +135,12 @@ class ProfilPage extends StatelessWidget {
                 icon: Icons.person_outline_rounded,
                 title: "My Account",
                 subtitle: "Make changes to your account",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MyAccountPage()),
+                  );
+                },
               ),
 
               _buildMenuItem(
@@ -214,10 +192,25 @@ class ProfilPage extends StatelessWidget {
               // LOGOUT BUTTON
               // ==========================================
               Padding(
-                padding: const EdgeInsets.only(right: 20,left: 20, bottom: 55),
+                padding: const EdgeInsets.only(right: 20, left: 20, bottom: 55),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(20),
-                  onTap: () {},
+
+                  onTap: () async {
+                    // LOGOUT SERVICE
+                    await ref.read(authServiceProvider).logout();
+
+                    // CLEAR PROVIDER
+                    ref.read(currentUserProvider.notifier).state = null;
+
+                    // PINDAH KE LOGIN
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => LandingPage()),
+                      (route) => false,
+                    );
+                  },
+
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -229,10 +222,7 @@ class ProfilPage extends StatelessWidget {
                     ),
                     child: const Row(
                       children: [
-                        Icon(
-                          Icons.logout_rounded,
-                          color: Colors.red,
-                        ),
+                        Icon(Icons.logout_rounded, color: Colors.red),
 
                         SizedBox(width: 15),
 
@@ -270,7 +260,7 @@ class ProfilPage extends StatelessWidget {
   // ==========================================
   // SECTION TITLE
   // ==========================================
-  Widget _buildSectionTitle(String title) {
+  static Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 5, 20, 15),
       child: Align(
@@ -291,24 +281,26 @@ class ProfilPage extends StatelessWidget {
   // ==========================================
   // MENU ITEM
   // ==========================================
-  Widget _buildMenuItem({
+  static Widget _buildMenuItem({
     required IconData icon,
     required String title,
     String? subtitle,
+    VoidCallback? onTap,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap: () {
-          print("$title ditekan");
-        },
+
+        onTap: onTap,
+
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
           ),
+
           child: Row(
             children: [
               // ICON
@@ -318,11 +310,8 @@ class ProfilPage extends StatelessWidget {
                   color: ColorTheme.primaryColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(15),
                 ),
-                child: Icon(
-                  icon,
-                  color: ColorTheme.primaryColor,
-                  size: 22,
-                ),
+
+                child: Icon(icon, color: ColorTheme.primaryColor, size: 22),
               ),
 
               const SizedBox(width: 15),

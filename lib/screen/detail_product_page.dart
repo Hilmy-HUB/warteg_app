@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warteg_app/model/cart_item_model.dart';
 import 'package:warteg_app/model/product_model.dart';
+import 'package:warteg_app/provider/cart_provider.dart';
 import 'package:warteg_app/screen/cart_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 
-class DetailProductPage extends StatefulWidget {
+class DetailProductPage extends ConsumerStatefulWidget {
   final ProductModel product;
 
-  const DetailProductPage({super.key, required this.product});
+  const DetailProductPage({
+    super.key,
+    required this.product,
+  });
 
   @override
-  State<DetailProductPage> createState() => _DetailProductPageState();
+  ConsumerState<DetailProductPage> createState() =>
+      _DetailProductPageState();
 }
 
-class _DetailProductPageState extends State<DetailProductPage> {
-  final TextEditingController notesController = TextEditingController();
+class _DetailProductPageState
+    extends ConsumerState<DetailProductPage> {
+  final TextEditingController notesController =
+      TextEditingController();
 
   bool addOn1 = false;
   bool addOn2 = false;
@@ -27,10 +35,12 @@ class _DetailProductPageState extends State<DetailProductPage> {
 
   int get hargaSatuan {
     int total = hargaAwal;
+
     if (addOn1) total += 2000;
     if (addOn2) total += 2000;
     if (addOn3) total += 3000;
     if (addOn4) total += 4000;
+
     return total;
   }
 
@@ -46,7 +56,9 @@ class _DetailProductPageState extends State<DetailProductPage> {
       duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: value ? ColorTheme.buttonPrimary.withOpacity(0.06) : Colors.white,
+        color: value
+            ? ColorTheme.buttonPrimary.withOpacity(0.06)
+            : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: value
@@ -62,7 +74,8 @@ class _DetailProductPageState extends State<DetailProductPage> {
         checkboxShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(6),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
         controlAffinity: ListTileControlAffinity.leading,
         title: Text(
           title,
@@ -70,11 +83,16 @@ class _DetailProductPageState extends State<DetailProductPage> {
             fontFamily: 'Poppins',
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: value ? ColorTheme.buttonPrimary : Colors.black87,
+            color: value
+                ? ColorTheme.buttonPrimary
+                : Colors.black87,
           ),
         ),
         secondary: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 5,
+          ),
           decoration: BoxDecoration(
             color: ColorTheme.buttonPrimary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
@@ -91,6 +109,12 @@ class _DetailProductPageState extends State<DetailProductPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    notesController.dispose();
+    super.dispose();
   }
 
   @override
@@ -120,8 +144,11 @@ class _DetailProductPageState extends State<DetailProductPage> {
                 borderRadius: BorderRadius.circular(18),
               ),
               elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20),
             ),
+
+            // ================= ADD TO CART =================
             onPressed: () {
               final cartItem = CartItemModel(
                 id: UniqueKey().toString(),
@@ -137,14 +164,31 @@ class _DetailProductPageState extends State<DetailProductPage> {
                 hargaSatuan: hargaSatuan,
                 quantity: quantity,
               );
-              // tambahkan ke state/provider keranjang
+
+              ref
+                  .read(cartProvider.notifier)
+                  .addToCart(cartItem);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    "Berhasil masuk ke keranjang",
+                  ),
+                ),
+              );
             },
+
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment:
+                  MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 18),
+                    const Icon(
+                      Icons.shopping_bag_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     const Text(
                       "Tambah ke Keranjang",
@@ -157,10 +201,15 @@ class _DetailProductPageState extends State<DetailProductPage> {
                     ),
                   ],
                 ),
-                Container(width: 1, height: 28, color: Colors.white.withOpacity(0.3)),
+                Container(
+                  width: 1,
+                  height: 28,
+                  color: Colors.white.withOpacity(0.3),
+                ),
                 Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.end,
                   children: [
                     const Text(
                       "Total",
@@ -194,9 +243,10 @@ class _DetailProductPageState extends State<DetailProductPage> {
           // ================= SCROLLABLE CONTENT =================
           SingleChildScrollView(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
-                // ================= HERO IMAGE FULL WIDTH =================
+                // ================= HERO IMAGE =================
                 Stack(
                   children: [
                     SizedBox(
@@ -207,7 +257,7 @@ class _DetailProductPageState extends State<DetailProductPage> {
                         fit: BoxFit.cover,
                       ),
                     ),
-                    // Gradient overlay di bawah
+
                     Positioned(
                       bottom: 0,
                       left: 0,
@@ -218,7 +268,10 @@ class _DetailProductPageState extends State<DetailProductPage> {
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, ColorTheme.backgroundColor],
+                            colors: [
+                              Colors.transparent,
+                              ColorTheme.backgroundColor,
+                            ],
                           ),
                         ),
                       ),
@@ -226,85 +279,138 @@ class _DetailProductPageState extends State<DetailProductPage> {
                   ],
                 ),
 
-                // ================= KONTEN DETAIL =================
+                // ================= CONTENT =================
                 Container(
                   color: ColorTheme.backgroundColor,
-                  padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+                  padding:
+                      const EdgeInsets.fromLTRB(
+                    20,
+                    30,
+                    20,
+                    0,
+                  ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
-                      // ================= NAMA & QUANTITY =================
+                      // ================= TITLE =================
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.center,
                         children: [
                           Expanded(
                             child: Text(
                               widget.product.menuName,
                               style: const TextStyle(
                                 fontSize: 22,
-                                fontWeight: FontWeight.bold,
+                                fontWeight:
+                                    FontWeight.bold,
                                 fontFamily: 'Poppins',
                                 height: 1.3,
                               ),
                             ),
                           ),
+
                           const SizedBox(width: 12),
+
+                          // ================= QUANTITY =================
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.grey.shade200, width: 1.5),
+                              borderRadius:
+                                  BorderRadius.circular(
+                                      14),
+                              border: Border.all(
+                                color:
+                                    Colors.grey.shade200,
+                                width: 1.5,
+                              ),
                             ),
                             child: Row(
                               children: [
                                 GestureDetector(
                                   onTap: () {
-                                    if (quantity > 1) setState(() => quantity--);
+                                    if (quantity > 1) {
+                                      setState(() {
+                                        quantity--;
+                                      });
+                                    }
                                   },
                                   child: Container(
                                     width: 34,
                                     height: 34,
-                                    decoration: BoxDecoration(
-                                      color: quantity > 1
-                                          ? ColorTheme.buttonPrimary.withOpacity(0.08)
-                                          : Colors.grey.shade100,
-                                      borderRadius: BorderRadius.circular(12),
+                                    decoration:
+                                        BoxDecoration(
+                                      color:
+                                          quantity > 1
+                                              ? ColorTheme
+                                                  .buttonPrimary
+                                                  .withOpacity(
+                                                      0.08)
+                                              : Colors.grey
+                                                  .shade100,
+                                      borderRadius:
+                                          BorderRadius
+                                              .circular(
+                                                  12),
                                     ),
                                     child: Icon(
-                                      Icons.remove_rounded,
+                                      Icons
+                                          .remove_rounded,
                                       size: 16,
-                                      color: quantity > 1
-                                          ? ColorTheme.buttonPrimary
-                                          : Colors.grey.shade400,
+                                      color:
+                                          quantity > 1
+                                              ? ColorTheme
+                                                  .buttonPrimary
+                                              : Colors.grey
+                                                  .shade400,
                                     ),
                                   ),
                                 ),
+
                                 SizedBox(
                                   width: 32,
                                   child: Center(
                                     child: Text(
                                       "$quantity",
-                                      style: const TextStyle(
-                                        fontFamily: 'Poppins',
+                                      style:
+                                          const TextStyle(
+                                        fontFamily:
+                                            'Poppins',
                                         fontSize: 14,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight:
+                                            FontWeight
+                                                .bold,
                                       ),
                                     ),
                                   ),
                                 ),
+
                                 GestureDetector(
-                                  onTap: () => setState(() => quantity++),
+                                  onTap: () {
+                                    setState(() {
+                                      quantity++;
+                                    });
+                                  },
                                   child: Container(
                                     width: 34,
                                     height: 34,
-                                    decoration: BoxDecoration(
-                                      color: ColorTheme.buttonPrimary.withOpacity(0.08),
-                                      borderRadius: BorderRadius.circular(12),
+                                    decoration:
+                                        BoxDecoration(
+                                      color: ColorTheme
+                                          .buttonPrimary
+                                          .withOpacity(
+                                              0.08),
+                                      borderRadius:
+                                          BorderRadius
+                                              .circular(
+                                                  12),
                                     ),
                                     child: const Icon(
                                       Icons.add_rounded,
                                       size: 16,
-                                      color: ColorTheme.buttonPrimary,
+                                      color: ColorTheme
+                                          .buttonPrimary,
                                     ),
                                   ),
                                 ),
@@ -316,20 +422,21 @@ class _DetailProductPageState extends State<DetailProductPage> {
 
                       const SizedBox(height: 8),
 
-                      // ================= HARGA =================
+                      // ================= PRICE =================
                       Text(
                         "Rp ${widget.product.price}",
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: ColorTheme.buttonPrimary,
+                          color:
+                              ColorTheme.buttonPrimary,
                           fontFamily: 'Poppins',
                         ),
                       ),
 
                       const SizedBox(height: 12),
 
-                      // ================= DESKRIPSI =================
+                      // ================= DESCRIPTION =================
                       Text(
                         widget.product.description,
                         style: const TextStyle(
@@ -342,19 +449,25 @@ class _DetailProductPageState extends State<DetailProductPage> {
 
                       const SizedBox(height: 28),
 
-                      Container(height: 1, color: Colors.grey.shade100),
+                      Container(
+                        height: 1,
+                        color: Colors.grey.shade100,
+                      ),
 
                       const SizedBox(height: 24),
 
-                      // ================= ADD ONS =================
+                      // ================= ADD ONS TITLE =================
                       Row(
                         children: [
                           Container(
                             width: 4,
                             height: 20,
                             decoration: BoxDecoration(
-                              color: ColorTheme.buttonPrimary,
-                              borderRadius: BorderRadius.circular(4),
+                              color: ColorTheme
+                                  .buttonPrimary,
+                              borderRadius:
+                                  BorderRadius.circular(
+                                      4),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -362,16 +475,24 @@ class _DetailProductPageState extends State<DetailProductPage> {
                             "Tambah Add On",
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontWeight:
+                                  FontWeight.bold,
                               fontFamily: 'Poppins',
                             ),
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding:
+                                const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(20),
+                              color:
+                                  Colors.grey.shade100,
+                              borderRadius:
+                                  BorderRadius.circular(
+                                      20),
                             ),
                             child: const Text(
                               "Opsional",
@@ -387,34 +508,57 @@ class _DetailProductPageState extends State<DetailProductPage> {
 
                       const SizedBox(height: 16),
 
+                      // ================= ADD ONS =================
                       buildAddOn(
                         title: "Kerupuk Putih",
                         price: 2000,
                         value: addOn1,
-                        onChanged: (value) => setState(() => addOn1 = value!),
+                        onChanged: (value) {
+                          setState(() {
+                            addOn1 = value!;
+                          });
+                        },
                       ),
+
                       buildAddOn(
                         title: "Kerupuk Kulit",
                         price: 2000,
                         value: addOn2,
-                        onChanged: (value) => setState(() => addOn2 = value!),
+                        onChanged: (value) {
+                          setState(() {
+                            addOn2 = value!;
+                          });
+                        },
                       ),
+
                       buildAddOn(
                         title: "Extra Sambal",
                         price: 3000,
                         value: addOn3,
-                        onChanged: (value) => setState(() => addOn3 = value!),
+                        onChanged: (value) {
+                          setState(() {
+                            addOn3 = value!;
+                          });
+                        },
                       ),
+
                       buildAddOn(
                         title: "Nasi Extra",
                         price: 4000,
                         value: addOn4,
-                        onChanged: (value) => setState(() => addOn4 = value!),
+                        onChanged: (value) {
+                          setState(() {
+                            addOn4 = value!;
+                          });
+                        },
                       ),
 
                       const SizedBox(height: 24),
 
-                      Container(height: 1, color: Colors.grey.shade100),
+                      Container(
+                        height: 1,
+                        color: Colors.grey.shade100,
+                      ),
 
                       const SizedBox(height: 24),
 
@@ -425,8 +569,11 @@ class _DetailProductPageState extends State<DetailProductPage> {
                             width: 4,
                             height: 20,
                             decoration: BoxDecoration(
-                              color: ColorTheme.buttonPrimary,
-                              borderRadius: BorderRadius.circular(4),
+                              color: ColorTheme
+                                  .buttonPrimary,
+                              borderRadius:
+                                  BorderRadius.circular(
+                                      4),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -434,7 +581,8 @@ class _DetailProductPageState extends State<DetailProductPage> {
                             "Catatan untuk Penjual",
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontWeight:
+                                  FontWeight.bold,
                               fontFamily: 'Poppins',
                             ),
                           ),
@@ -446,25 +594,43 @@ class _DetailProductPageState extends State<DetailProductPage> {
                       TextFormField(
                         controller: notesController,
                         maxLines: 4,
-                        style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                        ),
                         decoration: InputDecoration(
-                          hintText: "Contoh: jangan pedas ya, kuahnya dipisah...",
-                          hintStyle: const TextStyle(
+                          hintText:
+                              "Contoh: jangan pedas ya, kuahnya dipisah...",
+                          hintStyle:
+                              const TextStyle(
                             color: Colors.grey,
                             fontFamily: 'Poppins',
                             fontSize: 13,
                           ),
                           filled: true,
                           fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.all(16),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(18),
-                            borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(18),
+                          contentPadding:
+                              const EdgeInsets.all(16),
+                          enabledBorder:
+                              OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(
+                                    18),
                             borderSide: BorderSide(
-                              color: ColorTheme.buttonPrimary.withOpacity(0.5),
+                              color:
+                                  Colors.grey.shade200,
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder:
+                              OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(
+                                    18),
+                            borderSide: BorderSide(
+                              color: ColorTheme
+                                  .buttonPrimary
+                                  .withOpacity(0.5),
                               width: 1.5,
                             ),
                           ),
@@ -479,46 +645,73 @@ class _DetailProductPageState extends State<DetailProductPage> {
             ),
           ),
 
-          // ================= FIXED FLOATING APPBAR =================
-          // Tombol back & keranjang di-overlay di atas Stack, tidak ikut scroll
+          // ================= FLOATING APPBAR =================
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween,
                 children: [
-                  // Tombol back
+                  // BACK BUTTON
                   InkWell(
-                    borderRadius: BorderRadius.circular(50),
-                    onTap: () => Navigator.pop(context),
+                    borderRadius:
+                        BorderRadius.circular(50),
+                    onTap: () =>
+                        Navigator.pop(context),
                     child: Container(
-                      padding: const EdgeInsets.all(9),
+                      padding:
+                          const EdgeInsets.all(9),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.92),
-                        borderRadius: BorderRadius.circular(50),
+                        color:
+                            Colors.white.withOpacity(
+                                0.92),
+                        borderRadius:
+                            BorderRadius.circular(50),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.10),
+                            color: Colors.black
+                                .withOpacity(0.10),
                             blurRadius: 8,
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                      ),
                     ),
                   ),
 
-                  // Tombol keranjang
+                  // CART BUTTON
                   InkWell(
-                    borderRadius: BorderRadius.circular(50),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CartPage())),
+                    borderRadius:
+                        BorderRadius.circular(50),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const CartPage(),
+                        ),
+                      );
+                    },
                     child: Container(
-                      padding: const EdgeInsets.all(9),
+                      padding:
+                          const EdgeInsets.all(9),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.92),
-                        borderRadius: BorderRadius.circular(50),
+                        color:
+                            Colors.white.withOpacity(
+                                0.92),
+                        borderRadius:
+                            BorderRadius.circular(50),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.10),
+                            color: Colors.black
+                                .withOpacity(0.10),
                             blurRadius: 8,
                           ),
                         ],
@@ -526,7 +719,8 @@ class _DetailProductPageState extends State<DetailProductPage> {
                       child: const Icon(
                         Icons.shopping_cart_outlined,
                         size: 18,
-                        color: ColorTheme.buttonPrimary,
+                        color:
+                            ColorTheme.buttonPrimary,
                       ),
                     ),
                   ),
