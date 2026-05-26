@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:warteg_app/model/order_status_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warteg_app/model/cart_item_model.dart';
 import 'package:warteg_app/model/order_model.dart';
 import 'package:warteg_app/provider/checkout_provider.dart';
 import 'package:warteg_app/provider/order_provider.dart';
-import 'package:warteg_app/provider/payment_provider.dart';
 import 'package:warteg_app/screen/address_page.dart';
 import 'package:warteg_app/screen/home.dart';
+import 'package:warteg_app/screen/invoice_page.dart';
+import 'package:warteg_app/screen/payment_page.dart';
 import 'package:warteg_app/screen/promo_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 import 'package:warteg_app/provider/cart_provider.dart';
@@ -43,6 +45,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   Future<void> _placeOrder(dynamic checkout) async {
+    final vaNumber = "8808${DateTime.now().millisecondsSinceEpoch}";
+
     if (checkout.selectedAddress == null) {
       _showSnack('Please select a delivery address first', isError: true);
       return;
@@ -57,43 +61,100 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
     await Future.delayed(const Duration(milliseconds: 400));
 
+    final paymentName = checkout.paymentMethod!.name;
+
+    // =========================
+    // CEK BANK VA
+    // =========================
+
+    final isBankVA =
+        paymentName == "BCA" ||
+        paymentName == "BNI" ||
+        paymentName == "Mandiri";
+
+    // =========================
+    // CREATE ORDER
+    // =========================
+
     final order = OrderModel(
+      expiredAt: DateTime.now().add(const Duration(hours: 24)),
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-
       items: checkout.items,
-
       address: checkout.selectedAddress!,
-
-      promo: checkout.selectedPromo,
-
       paymentMethod: checkout.paymentMethod!,
-
       subtotal: checkout.subtotal,
-
       ongkir: checkout.ongkir,
-
       discount: checkout.promoDiscount,
-
       total: checkout.total,
-
       createdAt: DateTime.now(),
+
+      status: isBankVA ? OrderStatusModel.bayar : OrderStatusModel.diproses,
+      vaNumber: isBankVA ? "8808${DateTime.now().millisecondsSinceEpoch}" : "",
     );
 
     // =========================
-    // TAMBAH ORDER
+    // SAVE ORDER
     // =========================
 
     ref.read(orderProvider.notifier).addOrder(order);
 
     // =========================
-    // HAPUS ITEM DARI CART
+    // BANK VA
     // =========================
 
+    if (isBankVA) {
+      final cartNotifier = ref.read(cartProvider.notifier);
+
+      cartNotifier.clearCart();
+      ref.read(checkoutProvider.notifier).clearCheckout();
+
+      setState(() => _isLoading = false);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => InvoicePage(order: order, vaNumber: vaNumber),
+        ),
+      );
+
+      return;
+    }
+
+    // =========================
+    // AUTO STATUS
+    // =========================
+
+    Future.delayed(const Duration(seconds: 5), () {
+      ref
+          .read(orderProvider.notifier)
+          .updateOrderStatus(order.id, OrderStatusModel.diproses);
+    });
+
+    Future.delayed(const Duration(seconds: 10), () {
+      ref
+          .read(orderProvider.notifier)
+          .updateOrderStatus(order.id, OrderStatusModel.dijemput);
+    });
+
+    Future.delayed(const Duration(seconds: 15), () {
+      ref
+          .read(orderProvider.notifier)
+          .updateOrderStatus(order.id, OrderStatusModel.diantar);
+    });
+
+    Future.delayed(const Duration(seconds: 20), () {
+      ref
+          .read(orderProvider.notifier)
+          .updateOrderStatus(order.id, OrderStatusModel.selesai);
+    });
+    // =========================
+    // REMOVE CART
+    // =========================
+
+    // REMOVE CART
     final cartNotifier = ref.read(cartProvider.notifier);
 
-    for (final item in checkout.items) {
-      cartNotifier.removeItem(item.id);
-    }
+    cartNotifier.clearCart();
 
     // =========================
     // CLEAR CHECKOUT
@@ -136,8 +197,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   @override
   Widget build(BuildContext context) {
     final checkout = ref.watch(checkoutProvider);
-    final paymentMethods = ref.watch(paymentProvider);
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7F4),
 
@@ -245,23 +304,26 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                   // 4. Payment Method
                   _SectionLabel(label: 'Payment Method'),
                   const SizedBox(height: 12),
-                  SizedBox(
-                    height: 64,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: paymentMethods.length,
-                      itemBuilder: (_, i) {
-                        final method = paymentMethods[i];
-                        final selected =
-                            checkout.paymentMethod?.name == method.name;
-                        return _PaymentChip(
-                          label: method.name,
-                          selected: selected,
-                          onTap: () => ref
-                              .read(checkoutProvider.notifier)
-                              .selectPayment(method),
-                        );
-                      },
+
+                  _SectionCard(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PaymentPage()),
+                      );
+                    },
+                    icon: Icons.payment_rounded,
+                    iconColor: ColorTheme.buttonPrimary,
+                    title: 'Payment Method',
+                    subtitle: checkout.paymentMethod == null
+                        ? 'Choose payment method'
+                        : checkout.paymentMethod!.name,
+                    subtitleColor: checkout.paymentMethod == null
+                        ? Colors.grey.shade400
+                        : Colors.black87,
+                    trailing: const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.grey,
                     ),
                   ),
 

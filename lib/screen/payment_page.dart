@@ -5,57 +5,84 @@ import 'package:warteg_app/provider/checkout_provider.dart';
 import 'package:warteg_app/provider/payment_provider.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 
-class PaymentPage extends ConsumerWidget {
+class PaymentPage extends ConsumerStatefulWidget {
   const PaymentPage({super.key});
 
   @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  ConsumerState<PaymentPage> createState() => _PaymentPageState();
+}
+
+class _PaymentPageState extends ConsumerState<PaymentPage> {
+  bool bankExpanded = true;
+  bool ewalletExpanded = true;
+
+  @override
+  Widget build(BuildContext context) {
     final paymentMethods = ref.watch(paymentProvider);
 
     final checkout = ref.watch(checkoutProvider);
 
+    final cod =
+        paymentMethods.where((e) => e.name == "COD").toList();
+
+    final banks = paymentMethods.where((e) {
+      return e.name == "BCA" ||
+          e.name == "BNI" ||
+          e.name == "Mandiri";
+    }).toList();
+
+    final digitalPayments = paymentMethods.where((e) {
+      return e.name == "Mastercard" ||
+          e.name == "DANA" ||
+          e.name == "GoPay" ||
+          e.name == "OVO";
+    }).toList();
+
     void _showSnack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError
-                  ? Icons.error_outline_rounded
-                  : Icons.check_circle_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              msg,
-              style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
-            ),
-          ],
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                isError
+                    ? Icons.error_outline_rounded
+                    : Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                msg,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: isError
+              ? const Color(0xFFEF4444)
+              : const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          duration: const Duration(seconds: 2),
         ),
-        backgroundColor: isError
-            ? const Color(0xFFEF4444)
-            : const Color(0xFF10B981),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7F4),
 
-      // =========================
-      // APPBAR
-      // =========================
       body: SafeArea(
         child: Column(
           children: [
+            // =========================
+            // APPBAR
+            // =========================
+
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
               child: Row(
@@ -99,8 +126,9 @@ class PaymentPage extends ConsumerWidget {
             ),
 
             // =========================
-            // HEADER CARD
+            // HEADER
             // =========================
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
@@ -147,7 +175,8 @@ class PaymentPage extends ConsumerWidget {
 
                     const Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
                         children: [
                           Text(
                             "Choose Payment",
@@ -181,210 +210,471 @@ class PaymentPage extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // =========================
-            // PAYMENT LIST
+            // LIST
             // =========================
+
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                itemCount: paymentMethods.length,
-                itemBuilder: (_, index) {
-                  final method = paymentMethods[index];
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  16,
+                  0,
+                  16,
+                  120,
+                ),
+                children: [
+                  // =========================
+                  // COD
+                  // =========================
 
-                  final isSelected =
-                      checkout.paymentMethod?.name == method.name;
+                  const _SectionTitle(
+                    title: "Cash On Delivery",
+                  ),
 
-                  return GestureDetector(
+                  const SizedBox(height: 12),
+
+                  ...cod.map(
+                    (method) => _PaymentTile(
+                      method: method,
+                      isSelected:
+                          checkout.paymentMethod?.name ==
+                              method.name,
+                      onTap: () {
+                        ref
+                            .read(
+                              checkoutProvider.notifier,
+                            )
+                            .selectPayment(method);
+
+                        _showSnack(
+                          'Payment method selected successfully',
+                        );
+
+                        HapticFeedback.lightImpact();
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // =========================
+                  // BANK
+                  // =========================
+
+                  _DropdownHeader(
+                    title: "Bank Transfer",
+                    expanded: bankExpanded,
                     onTap: () {
-                      ref
-                          .read(checkoutProvider.notifier)
-                          .selectPayment(method);
-                          _showSnack('Payment method selected successfully');
-                          HapticFeedback.lightImpact();
+                      setState(() {
+                        bankExpanded = !bankExpanded;
+                      });
                     },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      margin: const EdgeInsets.only(bottom: 14),
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(22),
+                  ),
 
-                        border: Border.all(
-                          color: isSelected
-                              ? ColorTheme.buttonPrimary
-                              : Colors.grey.shade200,
-                          width: 2,
-                        ),
+                  AnimatedCrossFade(
+                    duration:
+                        const Duration(milliseconds: 250),
+                    crossFadeState: bankExpanded
+                        ? CrossFadeState.showFirst
+                        : CrossFadeState.showSecond,
+                    firstChild: Column(
+                      children: banks
+                          .map(
+                            (method) => Padding(
+                              padding:
+                                  const EdgeInsets.only(
+                                top: 14,
+                              ),
+                              child: _PaymentTile(
+                                method: method,
+                                isSelected: checkout
+                                        .paymentMethod
+                                        ?.name ==
+                                    method.name,
+                                onTap: () {
+                                  ref
+                                      .read(
+                                        checkoutProvider
+                                            .notifier,
+                                      )
+                                      .selectPayment(
+                                        method,
+                                      );
 
-                        boxShadow: [
-                          BoxShadow(
-                            color: isSelected
-                                ? ColorTheme.buttonPrimary.withOpacity(0.10)
-                                : Colors.black.withOpacity(0.04),
-                            blurRadius: isSelected ? 18 : 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
+                                  _showSnack(
+                                    'Payment method selected successfully',
+                                  );
 
-                      child: Row(
-                        children: [
-                          // =========================
-                          // ICON
-                          // =========================
-                          AnimatedContainer(
-                            duration:
-                                const Duration(milliseconds: 250),
-                            width: 58,
-                            height: 58,
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? ColorTheme.buttonPrimary
-                                      .withOpacity(0.12)
-                                  : Colors.grey.shade100,
-                              borderRadius:
-                                  BorderRadius.circular(18),
-                            ),
-                            child: Icon(
-                              getPaymentIcon(method.name),
-                              color: isSelected
-                                  ? ColorTheme.buttonPrimary
-                                  : Colors.grey.shade500,
-                              size: 28,
-                            ),
-                          ),
-
-                          const SizedBox(width: 16),
-
-                          // =========================
-                          // INFO
-                          // =========================
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        method.name,
-                                        style: const TextStyle(
-                                          fontFamily: 'Poppins',
-                                          fontSize: 15,
-                                          fontWeight:
-                                              FontWeight.w700,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                    ),
-
-                                    if (isSelected)
-                                      Container(
-                                        padding:
-                                            const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: ColorTheme
-                                              .buttonPrimary
-                                              .withOpacity(0.10),
-                                          borderRadius:
-                                              BorderRadius.circular(
-                                                  20),
-                                        ),
-                                        child: const Text(
-                                          "Selected",
-                                          style: TextStyle(
-                                            fontFamily: 'Poppins',
-                                            fontSize: 10,
-                                            fontWeight:
-                                                FontWeight.w700,
-                                            color: ColorTheme
-                                                .buttonPrimary,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-
-                                const SizedBox(height: 6),
-
-                                Text(
-                                  getPaymentDesc(method.name),
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 12.5,
-                                    height: 1.4,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 10),
-
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.flash_on_rounded,
-                                      size: 14,
-                                      color: Colors.amber.shade700,
-                                    ),
-
-                                    const SizedBox(width: 4),
-
-                                    Text(
-                                      getPaymentFeature(method.name),
-                                      style: TextStyle(
-                                        fontFamily: 'Poppins',
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(width: 12),
-
-                          // =========================
-                          // CHECKBOX UI
-                          // =========================
-                          AnimatedContainer(
-                            duration:
-                                const Duration(milliseconds: 250),
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isSelected
-                                  ? ColorTheme.buttonPrimary
-                                  : Colors.transparent,
-                              border: Border.all(
-                                color: isSelected
-                                    ? ColorTheme.buttonPrimary
-                                    : Colors.grey.shade400,
-                                width: 2,
+                                  HapticFeedback
+                                      .lightImpact();
+                                },
                               ),
                             ),
-                            child: isSelected
-                                ? const Icon(
-                                    Icons.check,
-                                    color: Colors.white,
-                                    size: 16,
-                                  )
-                                : null,
-                          ),
-                        ],
-                      ),
+                          )
+                          .toList(),
                     ),
-                  );
-                },
+                    secondChild: const SizedBox(),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // =========================
+                  // DIGITAL
+                  // =========================
+
+                  _DropdownHeader(
+                    title: "Digital Payment",
+                    expanded: ewalletExpanded,
+                    onTap: () {
+                      setState(() {
+                        ewalletExpanded =
+                            !ewalletExpanded;
+                      });
+                    },
+                  ),
+
+                  AnimatedCrossFade(
+                    duration:
+                        const Duration(milliseconds: 250),
+                    crossFadeState: ewalletExpanded
+                        ? CrossFadeState.showFirst
+                        : CrossFadeState.showSecond,
+                    firstChild: Column(
+                      children: digitalPayments
+                          .map(
+                            (method) => Padding(
+                              padding:
+                                  const EdgeInsets.only(
+                                top: 14,
+                              ),
+                              child: _PaymentTile(
+                                method: method,
+                                isSelected: checkout
+                                        .paymentMethod
+                                        ?.name ==
+                                    method.name,
+                                onTap: () {
+                                  ref
+                                      .read(
+                                        checkoutProvider
+                                            .notifier,
+                                      )
+                                      .selectPayment(
+                                        method,
+                                      );
+
+                                  _showSnack(
+                                    'Payment method selected successfully',
+                                  );
+
+                                  HapticFeedback
+                                      .lightImpact();
+                                },
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                    secondChild: const SizedBox(),
+                  ),
+                ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =========================
+// SECTION TITLE
+// =========================
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+
+  const _SectionTitle({
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontFamily: 'Poppins',
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+        color: Colors.black87,
+      ),
+    );
+  }
+}
+
+// =========================
+// DROPDOWN HEADER
+// =========================
+
+class _DropdownHeader extends StatelessWidget {
+  final String title;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  const _DropdownHeader({
+    required this.title,
+    required this.expanded,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 18,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: ColorTheme.buttonPrimary
+                    .withOpacity(0.10),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.account_balance_wallet_rounded,
+                color: ColorTheme.buttonPrimary,
+              ),
+            ),
+
+            const SizedBox(width: 14),
+
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+
+            AnimatedRotation(
+              duration:
+                  const Duration(milliseconds: 250),
+              turns: expanded ? 0.5 : 0,
+              child: const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 28,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =========================
+// PAYMENT TILE
+// =========================
+
+class _PaymentTile extends StatelessWidget {
+  final dynamic method;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _PaymentTile({
+    required this.method,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: isSelected
+                ? ColorTheme.buttonPrimary
+                : Colors.grey.shade200,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isSelected
+                  ? ColorTheme.buttonPrimary
+                      .withOpacity(0.10)
+                  : Colors.black.withOpacity(0.04),
+              blurRadius: isSelected ? 18 : 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // ICON
+
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? ColorTheme.buttonPrimary
+                        .withOpacity(0.12)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(
+                getPaymentIcon(method.name),
+                color: isSelected
+                    ? ColorTheme.buttonPrimary
+                    : Colors.grey.shade500,
+                size: 28,
+              ),
+            ),
+
+            const SizedBox(width: 16),
+
+            // INFO
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          method.name,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+
+                      if (isSelected)
+                        Container(
+                          padding:
+                              const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: ColorTheme
+                                .buttonPrimary
+                                .withOpacity(0.10),
+                            borderRadius:
+                                BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            "Selected",
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: ColorTheme
+                                  .buttonPrimary,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  Text(
+                    getPaymentDesc(method.name),
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12.5,
+                      height: 1.4,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.flash_on_rounded,
+                        size: 14,
+                        color: Colors.amber.shade700,
+                      ),
+
+                      const SizedBox(width: 4),
+
+                      Text(
+                        getPaymentFeature(method.name),
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            // CHECKBOX
+
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected
+                    ? ColorTheme.buttonPrimary
+                    : Colors.transparent,
+                border: Border.all(
+                  color: isSelected
+                      ? ColorTheme.buttonPrimary
+                      : Colors.grey.shade400,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 16,
+                    )
+                  : null,
             ),
           ],
         ),
@@ -393,7 +683,7 @@ class PaymentPage extends ConsumerWidget {
   }
 
   // =========================
-  // PAYMENT ICON
+  // ICON
   // =========================
 
   IconData getPaymentIcon(String name) {
@@ -420,7 +710,7 @@ class PaymentPage extends ConsumerWidget {
   }
 
   // =========================
-  // DESCRIPTION
+  // DESC
   // =========================
 
   String getPaymentDesc(String name) {
@@ -455,7 +745,7 @@ class PaymentPage extends ConsumerWidget {
   }
 
   // =========================
-  // FEATURE TEXT
+  // FEATURE
   // =========================
 
   String getPaymentFeature(String name) {

@@ -1,24 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:warteg_app/services/auth_service.dart';
 
 // ======================================
 // AUTH SERVICE
 // ======================================
 
-final authServiceProvider = Provider(
-  (ref) => AuthService(),
-);
+final authServiceProvider = Provider((ref) => AuthService());
 
 // ======================================
 // CURRENT USER
 // ======================================
 
-final currentUserProvider =
-    StateProvider<Map<String, dynamic>?>(
-  (ref) => null,
-);
+final currentUserProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
 
 // ======================================
 // AUTH CONTROLLER
@@ -26,18 +22,14 @@ final currentUserProvider =
 
 final authControllerProvider =
     StateNotifierProvider<AuthController, AsyncValue<void>>(
-  (ref) => AuthController(
-    ref.read(authServiceProvider),
-    ref,
-  ),
-);
+      (ref) => AuthController(ref.read(authServiceProvider), ref),
+    );
 
 class AuthController extends StateNotifier<AsyncValue<void>> {
   final AuthService _service;
   final Ref ref;
 
-  AuthController(this._service, this.ref)
-      : super(const AsyncData(null));
+  AuthController(this._service, this.ref) : super(const AsyncData(null));
 
   // ======================================
   // REGISTER
@@ -65,28 +57,32 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   // LOGIN
   // ======================================
 
-  Future<String?> login(
-    String email,
-    String password,
-  ) async {
+  Future<String?> login(String email, String password) async {
     state = const AsyncLoading();
 
-    final result = await _service.login(
-      email: email,
-      password: password,
-    );
+    final result = await _service.login(email: email, password: password);
 
     // LOGIN BERHASIL
     if (result == null) {
-
-      // AMBIL DATA USER DARI SERVICE
       final user = _service.currentUser;
 
-      // SIMPAN USER LOGIN
+      // SIMPAN KE PROVIDER
       ref.read(currentUserProvider.notifier).state = {
         "username": user?["username"],
         "email": user?["email"],
       };
+
+      // =========================
+      // SIMPAN KE SHAREDPREFERENCES
+      // =========================
+
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setBool("isLogin", true);
+
+      await prefs.setString("username", user?["username"] ?? "Guest");
+
+      await prefs.setString("email", user?["email"] ?? "");
     }
 
     state = const AsyncData(null);
@@ -99,9 +95,10 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   // ======================================
 
   Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
 
-  await Supabase.instance.client.auth.signOut();
+    await prefs.remove("isLogin");
 
-  ref.read(currentUserProvider.notifier).state = null;
-}
+    ref.read(currentUserProvider.notifier).state = null;
+  }
 }

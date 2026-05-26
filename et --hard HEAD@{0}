@@ -1,0 +1,10 @@
+[33m1852231[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: reset: moving to HEAD
+[33m1852231[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{1}: commit: update
+[33m4d5f1a9[m HEAD@{2}: commit: update
+[33m39f2407[m HEAD@{3}: commit: big update
+[33m3803d5d[m HEAD@{4}: commit: update
+[33mb9b5183[m HEAD@{5}: commit: fixed cart button
+[33m677880f[m HEAD@{6}: commit: update profil_page
+[33mfc99656[m HEAD@{7}: commit: page update
+[33m25e882f[m HEAD@{8}: Branch: renamed refs/heads/master to refs/heads/main
+[33m25e882f[m HEAD@{10}: commit (initial): Initial commit

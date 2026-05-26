@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warteg_app/model/order_model.dart';
+import 'package:warteg_app/model/order_status_model.dart';
 import 'package:warteg_app/provider/order_provider.dart';
+import 'package:warteg_app/screen/invoice_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 
 class OrderPage extends ConsumerStatefulWidget {
@@ -16,6 +18,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
   late TabController _tabController;
 
   final List<String> tabs = [
+    "Bayar",
     "Diproses",
     "Dijemput",
     "Diantar",
@@ -26,33 +29,31 @@ class _OrderPageState extends ConsumerState<OrderPage>
   void initState() {
     super.initState();
 
-    _tabController = TabController(
-      length: tabs.length,
-      vsync: this,
-    );
+    _tabController = TabController(length: tabs.length, vsync: this);
   }
 
   List<OrderModel> getOrdersByStatus(
     List<OrderModel> allOrders,
-    String status,
+    OrderStatusModel status,
   ) {
-    return allOrders
-        .where((order) => order.status == status)
-        .toList();
+    return allOrders.where((order) => order.status == status).toList();
   }
 
-  Color getStatusColor(String status) {
+  Color getStatusColor(OrderStatusModel status) {
     switch (status) {
-      case 'Diproses':
+      case OrderStatusModel.bayar:
+        return Colors.red;
+
+      case OrderStatusModel.diproses:
         return Colors.orange;
 
-      case 'Dijemput':
+      case OrderStatusModel.dijemput:
         return Colors.blue;
 
-      case 'Diantar':
+      case OrderStatusModel.diantar:
         return Colors.purple;
 
-      case 'Selesai':
+      case OrderStatusModel.selesai:
         return Colors.green;
 
       default:
@@ -78,282 +79,368 @@ class _OrderPageState extends ConsumerState<OrderPage>
   }
 
   Widget buildOrderCard(OrderModel order) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            height: 5,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: getStatusColor(order.status),
-              borderRadius: BorderRadius.circular(20),
+    return GestureDetector(
+      onTap: () {
+        if (order.status == OrderStatusModel.bayar) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => InvoicePage(
+                order: order,
+                vaNumber: order.vaNumber,
+              ),
             ),
-          ),
-
-          const SizedBox(height: 16),
-
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Order #${order.id.substring(8)}',
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+          );
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              height: 5,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: getStatusColor(order.status),
+                borderRadius: BorderRadius.circular(20),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: getStatusColor(order.status).withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Text(
-                  order.status,
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: getStatusColor(order.status),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
 
-          const SizedBox(height: 18),
+            const SizedBox(height: 16),
 
-          Column(
-            children: order.items.map((item) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(18),
-                      child: Image.network(
-                        item.image,
-                        width: 74,
-                        height: 74,
-                        fit: BoxFit.cover,
-                      ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Order #${order.id.substring(8)}',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
                     ),
+                  ),
+                ),
 
-                    const SizedBox(width: 14),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: getStatusColor(order.status).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Text(
+                    order.status.toString().split('.').last,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: getStatusColor(order.status),
+                    ),
+                  ),
+                ),
+              ],
+            ),
 
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.menuName,
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                          ),
+            const SizedBox(height: 18),
 
-                          const SizedBox(height: 5),
+            Column(
+              children: order.items.map((item) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.network(
+                          item.image,
+                          width: 74,
+                          height: 74,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
 
-                          Text(
-                            '${item.quantity} x Rp ${formatRupiah(item.hargaSatuan)}',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
+                      const SizedBox(width: 14),
 
-                          if (item.addOns.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                children: item.addOns
-                                    .map(
-                                      (e) => Container(
-                                        padding:
-                                            const EdgeInsets.symmetric(
-                                          horizontal: 9,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: ColorTheme.buttonPrimary
-                                              .withOpacity(0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(30),
-                                        ),
-                                        child: Text(
-                                          '+ $e',
-                                          style: const TextStyle(
-                                            fontSize: 10,
-                                            fontFamily: 'Poppins',
-                                            color:
-                                                ColorTheme.buttonPrimary,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.menuName,
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
                               ),
                             ),
-                        ],
+
+                            const SizedBox(height: 5),
+
+                            Text(
+                              '${item.quantity} x Rp ${formatRupiah(item.hargaSatuan)}',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+
+                            if (item.addOns.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: item.addOns
+                                      .map(
+                                        (e) => Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 9,
+                                            vertical: 5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: ColorTheme.buttonPrimary
+                                                .withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              30,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '+ $e',
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              fontFamily: 'Poppins',
+                                              color: ColorTheme.buttonPrimary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(width: 8),
+                      const SizedBox(width: 8),
 
-                    Text(
-                      'Rp ${formatRupiah(item.totalHarga)}',
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.bold,
-                        color: ColorTheme.buttonPrimary,
-                        fontSize: 13,
+                      Text(
+                        'Rp ${formatRupiah(item.totalHarga)}',
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.bold,
+                          color: ColorTheme.buttonPrimary,
+                          fontSize: 13,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-
-          const Divider(height: 30),
-
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(18),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      color: Colors.grey.shade600,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Alamat',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        color: Colors.grey,
+
+            const Divider(height: 30),
+
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        color: Colors.grey.shade600,
+                        size: 18,
                       ),
-                    ),
-                    const Spacer(),
-                    Expanded(
-                      child: Text(
-                        order.address.label,
-                        textAlign: TextAlign.end,
+
+                      const SizedBox(width: 8),
+
+                      const Text(
+                        'Alamat',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      Expanded(
+                        child: Text(
+                          order.address.label,
+                          textAlign: TextAlign.end,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.payments_outlined,
+                        color: Colors.grey.shade600,
+                        size: 18,
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      const Text(
+                        'Pembayaran',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      Text(
+                        order.paymentMethod.name,
                         style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),
                       ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: ColorTheme.buttonPrimary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Row(
+                children: [
+                  const Text(
+                    'Total Belanja',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      color: Colors.grey,
                     ),
-                  ],
+                  ),
+
+                  const Spacer(),
+
+                  Text(
+                    'Rp ${formatRupiah(order.total)}',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 19,
+                      fontWeight: FontWeight.bold,
+                      color: ColorTheme.buttonPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            if (order.status == OrderStatusModel.bayar) ...[
+              const SizedBox(height: 18),
+
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(18),
                 ),
-
-                const SizedBox(height: 14),
-
-                Row(
+                child: Row(
                   children: [
-                    Icon(
-                      Icons.payments_outlined,
-                      color: Colors.grey.shade600,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Pembayaran',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      order.paymentMethod.name,
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
+                    const Icon(Icons.info_outline, color: Colors.red),
+
+                    const SizedBox(width: 10),
+
+                    Expanded(
+                      child: Text(
+                        'Silakan selesaikan pembayaran virtual account',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          const SizedBox(height: 18),
+              const SizedBox(height: 18),
 
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            decoration: BoxDecoration(
-              color: ColorTheme.buttonPrimary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Row(
-              children: [
-                const Text(
-                  'Total Belanja',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    color: Colors.grey,
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: () {
+                    ref
+                        .read(orderProvider.notifier)
+                        .updateOrderStatus(order.id, OrderStatusModel.diproses);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Pembayaran berhasil')),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ColorTheme.buttonPrimary,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: const Text(
+                    'Bayar Sekarang',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
-                const Spacer(),
-                Text(
-                  'Rp ${formatRupiah(order.total)}',
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                    color: ColorTheme.buttonPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget buildTabContent(String status) {
+  Widget buildTabContent(OrderStatusModel status) {
     final allOrders = ref.watch(orderProvider);
 
     final orders = getOrdersByStatus(allOrders, status);
@@ -436,33 +523,51 @@ class _OrderPageState extends ConsumerState<OrderPage>
           ),
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(75),
-          child: Container(
-            margin: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: false,
-              dividerColor: Colors.transparent,
-              indicator: BoxDecoration(
-                // color: ColorTheme.buttonPrimary,
-                borderRadius: BorderRadius.circular(14),
+          preferredSize: const Size.fromHeight(95),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+            child: Container(
+              height: 58,
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(22),
               ),
-              labelColor: ColorTheme.buttonPrimary,
-              unselectedLabelColor: Colors.grey,
-              labelStyle: const TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
+              child: TabBar(
+                tabAlignment: TabAlignment.start,
+                controller: _tabController,
+                isScrollable: true,
+                dividerColor: Colors.transparent,
+                indicatorSize: TabBarIndicatorSize.tab,
+                splashBorderRadius: BorderRadius.circular(18),
+                indicator: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                labelColor: ColorTheme.buttonPrimary,
+                unselectedLabelColor: Colors.grey.shade500,
+                labelStyle: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                ),
+                labelPadding: const EdgeInsets.symmetric(horizontal: 18),
+                tabs: tabs.map((e) {
+                  return SizedBox(height: 46, child: Center(child: Text(e)));
+                }).toList(),
               ),
-              tabs: tabs.map((e) => Tab(text: e)).toList(),
             ),
           ),
         ),
@@ -470,10 +575,11 @@ class _OrderPageState extends ConsumerState<OrderPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          buildTabContent('Diproses'),
-          buildTabContent('Dijemput'),
-          buildTabContent('Diantar'),
-          buildTabContent('Selesai'),
+          buildTabContent(OrderStatusModel.bayar),
+          buildTabContent(OrderStatusModel.diproses),
+          buildTabContent(OrderStatusModel.dijemput),
+          buildTabContent(OrderStatusModel.diantar),
+          buildTabContent(OrderStatusModel.selesai),
         ],
       ),
     );

@@ -439,6 +439,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           clipBehavior: Clip.none,
                           children: [
                             Container(
+                              margin: const EdgeInsets.only(right: 5),
                               width: _barHeight - 10,
                               height: _barHeight - 10,
                               decoration: BoxDecoration(
