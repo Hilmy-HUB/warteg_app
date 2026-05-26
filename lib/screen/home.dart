@@ -33,10 +33,10 @@ class _HomeState extends State<Home> {
       backgroundColor: ColorTheme.backgroundColor,
       body: Stack(
         children: [
-          // --- PAGE CONTENT (fills entire screen including behind navbar) ---
+          // --- PAGE CONTENT ---
           _daftarHalaman[_tabAktif],
 
-          // --- FLOATING NAVBAR OVERLAID AT BOTTOM ---
+          // --- FLOATING NAVBAR ---
           Positioned(
             left: 20,
             right: 20,
@@ -47,58 +47,69 @@ class _HomeState extends State<Home> {
                 filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.75),
+                    // Green background using your primary color at 90% opacity
+                    color: ColorTheme.secondaryColor.withOpacity(0.90),
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.4),
+                      color: Colors.white.withOpacity(0.25),
                       width: 1.2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: ColorTheme.secondaryColor.withOpacity(0.30),
                         blurRadius: 20,
                         offset: const Offset(0, 6),
                       ),
                     ],
                   ),
-                  child: BottomNavigationBar(
-                    currentIndex: _tabAktif,
-                    onTap: _pindahTab,
-                    selectedItemColor: ColorTheme.buttonPrimary,
-                    unselectedItemColor: Colors.grey.withOpacity(0.6),
-                    elevation: 0,
-                    type: BottomNavigationBarType.fixed,
-                    selectedLabelStyle: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                  child: Theme(
+                    // Override the canvas so BottomNavigationBar
+                    // doesn't paint its own white background on top
+                    data: Theme.of(context).copyWith(
+                      canvasColor: Colors.transparent,
                     ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 11,
+                    child: BottomNavigationBar(
+                      currentIndex: _tabAktif,
+                      onTap: _pindahTab,
+                      // Active icon/label: white so it pops on green
+                      selectedItemColor: Colors.white,
+                      // Inactive: white at 55% opacity
+                      unselectedItemColor: Colors.white.withOpacity(0.55),
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      type: BottomNavigationBarType.fixed,
+                      selectedLabelStyle: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 11,
+                      ),
+                      items: const [
+                        BottomNavigationBarItem(
+                          icon: Icon(Icons.home_outlined),
+                          activeIcon: Icon(Icons.home),
+                          label: "Home",
+                        ),
+                        BottomNavigationBarItem(
+                          icon: Icon(Icons.menu_book_outlined),
+                          activeIcon: Icon(Icons.menu_book),
+                          label: "Menu",
+                        ),
+                        BottomNavigationBarItem(
+                          icon: Icon(Icons.receipt_long_outlined),
+                          activeIcon: Icon(Icons.receipt_long),
+                          label: "Order",
+                        ),
+                        BottomNavigationBarItem(
+                          icon: Icon(Icons.person_outline),
+                          activeIcon: Icon(Icons.person),
+                          label: "Profil",
+                        ),
+                      ],
                     ),
-                    items: const [
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.home_outlined),
-                        activeIcon: Icon(Icons.home),
-                        label: "Home",
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.menu_book_outlined),
-                        activeIcon: Icon(Icons.menu_book),
-                        label: "Menu",
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.receipt_long_outlined),
-                        activeIcon: Icon(Icons.receipt_long),
-                        label: "Order",
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.person_outline),
-                        activeIcon: Icon(Icons.person),
-                        label: "Profil",
-                      ),
-                    ],
                   ),
                 ),
               ),
