@@ -61,6 +61,7 @@ flutter:
     - assets/images/welcome_screen/image1.jpg
     - assets/images/welcome_screen/image2.png
     - assets/images/welcome_screen/image3.png
+    - assets/images/homepage/logo.png
     - assets/images/homepage/paket1.png
     - assets/images/homepage/paket2.png
     - assets/images/homepage/paket3.png

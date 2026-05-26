@@ -7,6 +7,7 @@ import 'package:warteg_app/provider/address_provider.dart';
 import 'package:warteg_app/provider/cart_provider.dart';
 import 'package:warteg_app/screen/address_page.dart';
 import 'package:warteg_app/screen/cart_page.dart';
+import 'package:warteg_app/screen/detail_product_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 import 'package:warteg_app/widgets/menu_card.dart';
 
@@ -44,7 +45,6 @@ class _HomePageState extends ConsumerState<HomePage> {
           children: [
             // ── Scrollable content ────────────────────────────────────────
             SingleChildScrollView(
-              // Push content below the floating bar
               padding: EdgeInsets.only(
                 top: _floatingBarTotalHeight,
                 bottom: 120,
@@ -157,28 +157,120 @@ class _HomePageState extends ConsumerState<HomePage> {
                   const SizedBox(height: 26),
 
                   // =====================================================
-                  // BANNER
+                  // BANNER — tappable, navigates to DetailProductPage
                   // =====================================================
                   CarouselSlider(
-                    items: bannerImages.map((imageUrl) {
+                    items: bannerItems.map((item) {
                       return Builder(
                         builder: (BuildContext context) {
-                          return Container(
-                            width: MediaQuery.of(context).size.width,
-                            margin: const EdgeInsets.symmetric(horizontal: 0),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(24),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 6),
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      DetailProductPage(product: item.product),
+                                ),
+                              );
+                            },
+                            child: Stack(
+                              children: [
+                                // Banner image
+                                Container(
+                                  width: MediaQuery.of(context).size.width,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.08),
+                                        blurRadius: 14,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                                    image: DecorationImage(
+                                      image: AssetImage(item.image),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+
+                                // Gradient overlay at the bottom
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      borderRadius: const BorderRadius.only(
+                                        bottomLeft: Radius.circular(24),
+                                        bottomRight: Radius.circular(24),
+                                      ),
+                                      gradient: LinearGradient(
+                                        begin: Alignment.bottomCenter,
+                                        end: Alignment.topCenter,
+                                        colors: [
+                                          Colors.black.withOpacity(0.55),
+                                          Colors.transparent,
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // Product name + tap hint at the bottom
+                                Positioned(
+                                  left: 16,
+                                  right: 16,
+                                  bottom: 14,
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          item.product.menuName,
+                                          style: const TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.22),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(
+                                              0.4,
+                                            ),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Lihat Detail',
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
-                              image: DecorationImage(
-                                image: AssetImage(imageUrl),
-                                fit: BoxFit.cover,
-                              ),
                             ),
                           );
                         },
@@ -202,7 +294,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: bannerImages.asMap().entries.map((entry) {
+                    children: bannerItems.asMap().entries.map((entry) {
                       final isActive = _halamanAktif == entry.key;
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
@@ -266,54 +358,67 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
 
-            // ── Floating search bar + cart ─────────────────────────────────
+            // ── Floating header ───────────────────────────────────────────
             Positioned(
               top: 0,
               left: 0,
               right: 0,
               child: Container(
-                // Subtle frosted-glass feel: semi-transparent background
-                // that blurs content scrolling behind it
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8F7F4).withOpacity(0.92),
                 ),
-                padding: const EdgeInsets.fromLTRB(20, _barTopPadding, 20, _barBottomPadding),
-                child: Row(
+                padding: const EdgeInsets.fromLTRB(
+                  16,
+                  _barTopPadding,
+                  16,
+                  _barBottomPadding,
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    // SEARCH BAR
-                    Expanded(
+                    // ================= CENTER LOGO (TRUE CENTER) =================
+                    Center(
+                      child: Image.asset(
+                        'assets/images/homepage/logo.png',
+                        height: _barHeight - 6,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+
+                    // ================= LEFT: SEARCH =================
+                    Align(
+                      alignment: Alignment.centerLeft,
                       child: GestureDetector(
                         onTap: () => widget.onSearchTapped?.call(),
                         child: Container(
-                          height: _barHeight,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          height: _barHeight - 14,
+                          padding: const EdgeInsets.only(left: 10, right: 13),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.07),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
-                          child: Row(
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.search_rounded,
-                                color: ColorTheme.buttonPrimary,
-                                size: 20,
+                                size: 18,
+                                color: Colors.grey,
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  "Cari makanan...",
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 12.5,
-                                    color: Colors.grey.shade400,
-                                  ),
+                              SizedBox(width: 6),
+                              Text(
+                                "Search",
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  color: Colors.grey,
                                 ),
                               ),
                             ],
@@ -322,70 +427,71 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                     ),
 
-                    const SizedBox(width: 12),
-
-                    // CART BUTTON
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
+                    // ================= RIGHT: CART =================
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const CartPage()),
-                        );
-                      },
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Container(
-                            width: _barHeight,
-                            height: _barHeight,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.07),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.shopping_cart_outlined,
-                              color: ColorTheme.buttonPrimary,
-                              size: 22,
-                            ),
-                          ),
-                          if (totalCart > 0)
-                            Positioned(
-                              top: -3,
-                              right: -3,
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                constraints: const BoxConstraints(
-                                  minWidth: 18,
-                                  minHeight: 18,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.redAccent,
-                                  borderRadius: BorderRadius.circular(100),
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2,
+                        ),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: _barHeight - 10,
+                              height: _barHeight - 10,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.07),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
                                   ),
-                                ),
-                                child: Text(
-                                  totalCart > 99 ? "99+" : totalCart.toString(),
-                                  style: const TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.shopping_cart_outlined,
+                                color: ColorTheme.buttonPrimary,
+                                size: 20,
                               ),
                             ),
-                        ],
+
+                            if (totalCart > 0)
+                              Positioned(
+                                top: -3,
+                                right: -3,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 16,
+                                    minHeight: 16,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.redAccent,
+                                    borderRadius: BorderRadius.circular(100),
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    totalCart > 99
+                                        ? "99+"
+                                        : totalCart.toString(),
+                                    style: const TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
