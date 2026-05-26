@@ -13,8 +13,8 @@ class PaymentPage extends ConsumerStatefulWidget {
 }
 
 class _PaymentPageState extends ConsumerState<PaymentPage> {
-  bool bankExpanded = true;
-  bool ewalletExpanded = true;
+  bool bankExpanded = false;
+  bool ewalletExpanded = false;
 
   @override
   Widget build(BuildContext context) {

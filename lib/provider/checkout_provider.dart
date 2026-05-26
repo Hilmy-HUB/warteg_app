@@ -17,11 +17,9 @@ class CheckoutState {
     this.paymentMethod,
   });
 
-  int get subtotal =>
-      items.fold(0, (sum, item) => sum + item.totalHarga);
+  int get subtotal => items.fold(0, (sum, item) => sum + item.totalHarga);
 
-  int get ongkir =>
-      selectedPromo?.freeShipping == true ? 0 : 10000;
+  int get ongkir => selectedPromo?.freeShipping == true ? 0 : 10000;
 
   int get promoDiscount {
     if (selectedPromo == null) return 0;
@@ -48,6 +46,10 @@ class CheckoutState {
 class CheckoutNotifier extends StateNotifier<CheckoutState> {
   CheckoutNotifier() : super(CheckoutState());
 
+  void setDefaultAddress(AddressModel address) {
+    state = state.copyWith(selectedAddress: address);
+  }
+
   void setItems(List<CartItemModel> items) {
     state = state.copyWith(items: items);
   }
@@ -69,7 +71,6 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
   }
 }
 
-final checkoutProvider =
-    StateNotifierProvider<CheckoutNotifier, CheckoutState>(
+final checkoutProvider = StateNotifierProvider<CheckoutNotifier, CheckoutState>(
   (ref) => CheckoutNotifier(),
 );

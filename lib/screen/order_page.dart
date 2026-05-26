@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:warteg_app/extension/order_status_extension.dart';
 import 'package:warteg_app/model/order_model.dart';
 import 'package:warteg_app/model/order_status_model.dart';
 import 'package:warteg_app/provider/order_provider.dart';
@@ -17,13 +18,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  final List<String> tabs = [
-    "Bayar",
-    "Diproses",
-    "Dijemput",
-    "Diantar",
-    "Selesai",
-  ];
+  final List<OrderStatusModel> tabs = OrderStatusModel.values;
 
   @override
   void initState() {
@@ -85,10 +80,8 @@ class _OrderPageState extends ConsumerState<OrderPage>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => InvoicePage(
-                order: order,
-                vaNumber: order.vaNumber,
-              ),
+              builder: (_) =>
+                  InvoicePage(order: order, vaNumber: order.vaNumber),
             ),
           );
         }
@@ -143,7 +136,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Text(
-                    order.status.toString().split('.').last,
+                    order.status.label,
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 11,
@@ -565,7 +558,10 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 ),
                 labelPadding: const EdgeInsets.symmetric(horizontal: 18),
                 tabs: tabs.map((e) {
-                  return SizedBox(height: 46, child: Center(child: Text(e)));
+                  return SizedBox(
+                    height: 46,
+                    child: Center(child: Text(e.label)),
+                  );
                 }).toList(),
               ),
             ),

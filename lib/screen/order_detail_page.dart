@@ -3,6 +3,7 @@ import 'package:warteg_app/model/order_status_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warteg_app/model/cart_item_model.dart';
 import 'package:warteg_app/model/order_model.dart';
+import 'package:warteg_app/provider/address_provider.dart';
 import 'package:warteg_app/provider/checkout_provider.dart';
 import 'package:warteg_app/provider/order_provider.dart';
 import 'package:warteg_app/screen/address_page.dart';
@@ -28,9 +29,21 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => ref.read(checkoutProvider.notifier).setItems(widget.items),
-    );
+
+    Future.microtask(() {
+      final checkoutNotifier = ref.read(checkoutProvider.notifier);
+
+      checkoutNotifier.setItems(widget.items);
+
+      // =========================
+      // AMBIL DEFAULT ADDRESS
+      // =========================
+      final defaultAddress = ref.read(addressProvider.notifier).defaultAddress;
+
+      if (defaultAddress != null) {
+        checkoutNotifier.setDefaultAddress(defaultAddress);
+      }
+    });
   }
 
   static String _formatRupiah(int amount) {

@@ -10,6 +10,9 @@ class AddressNotifier extends StateNotifier<List<AddressModel>> {
 
   static const String storageKey = 'saved_addresses';
 
+  // =========================
+  // LOAD
+  // =========================
   Future<void> loadAddresses() async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString(storageKey);
@@ -23,39 +26,39 @@ class AddressNotifier extends StateNotifier<List<AddressModel>> {
 
     state = decoded.map((e) => AddressModel.fromJson(e)).toList();
 
-    // auto ensure ada selected
     _ensureSelected();
   }
 
-  Future<void> updateAddress(AddressModel updated) async {
-    state = state.map((e) {
-      if (e.id == updated.id) {
-        return updated;
-      }
-      return e;
-    }).toList();
-
-    await saveAddresses();
-  }
-
-  Future<void> saveAddresses() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      storageKey,
-      jsonEncode(state.map((e) => e.toJson()).toList()),
-    );
-  }
-
+  // =========================
+  // ADD
+  // =========================
   Future<void> addAddress(AddressModel address) async {
     state = [...state, address];
     await saveAddresses();
   }
 
+  // =========================
+  // UPDATE
+  // =========================
+  Future<void> updateAddress(AddressModel updated) async {
+    state = state.map((e) {
+      return e.id == updated.id ? updated : e;
+    }).toList();
+
+    await saveAddresses();
+  }
+
+  // =========================
+  // REMOVE
+  // =========================
   Future<void> removeAddress(String id) async {
     state = state.where((e) => e.id != id).toList();
     await saveAddresses();
   }
 
+  // =========================
+  // SELECT ADDRESS
+  // =========================
   Future<void> selectAddress(String id) async {
     state = state.map((address) {
       return address.copyWith(isSelected: address.id == id);
@@ -64,20 +67,48 @@ class AddressNotifier extends StateNotifier<List<AddressModel>> {
     await saveAddresses();
   }
 
+  // =========================
+  // SAVE
+  // =========================
+  Future<void> saveAddresses() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      storageKey,
+      jsonEncode(state.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  // =========================
+  // AUTO SELECT FIRST IF NONE
+  // =========================
   void _ensureSelected() {
     if (state.isEmpty) return;
 
     final hasSelected = state.any((e) => e.isSelected);
 
     if (!hasSelected) {
-      state = state
-          .map((e) => e.copyWith(isSelected: e.id == state.first.id))
-          .toList();
+      state = state.map((e) {
+        return e.copyWith(isSelected: e.id == state.first.id);
+      }).toList();
 
       saveAddresses();
     }
   }
 
+  // =========================
+  // GET DEFAULT ADDRESS (INI PENTING)
+  // =========================
+  AddressModel? get defaultAddress {
+    try {
+      return state.firstWhere((e) => e.isSelected);
+    } catch (_) {
+      return state.isNotEmpty ? state.first : null;
+    }
+  }
+
+  // =========================
+  // CLEAR
+  // =========================
   Future<void> clearAddresses() async {
     state = [];
     final prefs = await SharedPreferences.getInstance();
@@ -85,7 +116,10 @@ class AddressNotifier extends StateNotifier<List<AddressModel>> {
   }
 }
 
+// =========================
+// PROVIDER
+// =========================
 final addressProvider =
     StateNotifierProvider<AddressNotifier, List<AddressModel>>(
-      (ref) => AddressNotifier(),
-    );
+  (ref) => AddressNotifier(),
+);
