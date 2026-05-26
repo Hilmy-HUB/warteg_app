@@ -28,7 +28,7 @@ class MenuCard extends StatelessWidget {
       },
 
       child: Container(
-        width: 140,
+        width: 150,
         margin: const EdgeInsets.only(right: 15),
         decoration: BoxDecoration(
           color: ColorTheme.primaryColor,
@@ -47,7 +47,7 @@ class MenuCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
                   menu.image,
-                  height: 110,
+                  height: 140,
                   width: double.infinity,
                   fit: BoxFit.cover,
                 ),

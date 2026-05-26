@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:warteg_app/services/auth_service.dart';
 
 // ======================================
@@ -97,7 +98,10 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   // LOGOUT
   // ======================================
 
-  void logout() {
-    ref.read(currentUserProvider.notifier).state = null;
-  }
+  Future<void> logout() async {
+
+  await Supabase.instance.client.auth.signOut();
+
+  ref.read(currentUserProvider.notifier).state = null;
+}
 }

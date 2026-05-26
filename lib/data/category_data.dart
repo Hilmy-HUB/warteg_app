@@ -1,19 +1,9 @@
 import 'package:warteg_app/model/category_model.dart';
 
 final List<CategoryModel> category = [
-  CategoryModel(
-    id: '1', 
-    categoryName: 'All'),
-  CategoryModel(
-    id: '2', 
-    categoryName: 'Recommended'),
-  CategoryModel(
-    id: '3', 
-    categoryName: 'Spicy Dishes'),
-  CategoryModel(
-    id: '4', 
-    categoryName: 'Sweet Dishes'),
-  CategoryModel(
-    id: '5', 
-    categoryName: 'Drinks'),
+  CategoryModel(id: 'all', categoryName: 'All'),
+  CategoryModel(id: 'recommended', categoryName: 'Recommended'),
+  CategoryModel(id: 'spicy', categoryName: 'Spicy Dishes'),
+  CategoryModel(id: 'sweet', categoryName: 'Sweet Dishes'),
+  CategoryModel(id: 'drinks', categoryName: 'Drinks'),
 ];

@@ -6,5 +6,5 @@ class ColorTheme {
   static const buttonPrimary =  Color.fromRGBO(0, 77, 64, 1);
   static const textPrimary =  Color.fromRGBO(0, 0, 0, 1);
   static const textSecondary =  Color.fromRGBO(255, 255, 255, 1);
-  static const backgroundColor =  Color.fromRGBO(219, 219, 219, 1);
+  static const backgroundColor = Color(0xFFF8F7F4);
 }

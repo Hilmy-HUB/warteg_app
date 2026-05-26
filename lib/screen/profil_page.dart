@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warteg_app/controller/auth_controller.dart';
 import 'package:warteg_app/screen/landing_page.dart';
 import 'package:warteg_app/screen/myaccount.dart';
+import 'package:warteg_app/screen/payment_page.dart';
+import 'package:warteg_app/screen/promo_page.dart';
 // import 'package:warteg_app/screen/signin_page.dart';
 // import 'package:warteg_app/screen/welcome_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
@@ -73,17 +75,22 @@ class ProfilPage extends ConsumerWidget {
                         children: [
                           // PHOTO
                           Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
-                            ),
-                            child: const CircleAvatar(
-                              radius: 38,
-                              backgroundImage: NetworkImage(
-                                'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80',
-                              ),
+                          width: 78,
+                          height: 78,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 2,
                             ),
                           ),
+                          child: const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 42,
+                          ),
+                        ),
 
                           const SizedBox(width: 18),
 
@@ -147,12 +154,24 @@ class ProfilPage extends ConsumerWidget {
                 icon: Icons.credit_card_rounded,
                 title: "Payments",
                 subtitle: "Manage your billings and payments",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PaymentPage()),
+                  );
+                },
               ),
 
               _buildMenuItem(
                 icon: Icons.discount_outlined,
                 title: "Promo",
                 subtitle: "Apply coupon codes and earn discount",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PromoPage()),
+                  );
+                },
               ),
 
               _buildMenuItem(

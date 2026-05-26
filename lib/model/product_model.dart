@@ -5,7 +5,7 @@ class ProductModel {
   final int price;
   String? notes;
   final String image;
-
+  final String category; // 🔥 HAPUS ?
 
   ProductModel({
     required this.id,
@@ -13,5 +13,6 @@ class ProductModel {
     required this.description,
     required this.price,
     required this.image,
+    required this.category,
   });
 }
