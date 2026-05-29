@@ -1,46 +1,48 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:warteg_app/model/notification_model.dart';
 
-class NotificationModel {
-  final String title;
-  final String message;
-  final String? orderId;
-  final DateTime createdAt;
-  final bool isRead;
+const String _notifKey = 'notifications';
 
-  NotificationModel({
-    required this.title,
-    required this.message,
-    this.orderId,
-    required this.createdAt,
-    this.isRead = false,
-  });
-
-  NotificationModel copyWith({
-    String? title,
-    String? message,
-    String? orderId,
-    DateTime? createdAt,
-    bool? isRead,
-  }) {
-    return NotificationModel(
-      title: title ?? this.title,
-      message: message ?? this.message,
-      orderId: orderId ?? this.orderId,
-      createdAt: createdAt ?? this.createdAt,
-      isRead: isRead ?? this.isRead,
-    );
+class NotificationNotifier extends StateNotifier<List<NotificationModel>> {
+  NotificationNotifier() : super([]) {
+    _loadFromPrefs();
   }
-}
 
-class NotificationNotifier
-    extends StateNotifier<List<NotificationModel>> {
-  NotificationNotifier() : super([]);
+  // =========================
+  // LOAD DARI PREFS
+  // =========================
 
-  void addNotification({
+  Future<void> _loadFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_notifKey);
+
+    if (raw == null) return;
+
+    final List decoded = jsonDecode(raw);
+    state = decoded.map((e) => NotificationModel.fromJson(e)).toList();
+  }
+
+  // =========================
+  // SIMPAN KE PREFS
+  // =========================
+
+  Future<void> _saveToPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = jsonEncode(state.map((e) => e.toJson()).toList());
+    await prefs.setString(_notifKey, encoded);
+  }
+
+  // =========================
+  // ADD NOTIFICATION
+  // =========================
+
+  Future<void> addNotification({
     required String title,
     required String message,
     String? orderId,
-  }) {
+  }) async {
     state = [
       NotificationModel(
         title: title,
@@ -50,21 +52,22 @@ class NotificationNotifier
       ),
       ...state,
     ];
+    await _saveToPrefs();
   }
 
-  void markAllAsRead() {
-    state = state
-        .map((e) => e.copyWith(isRead: true))
-        .toList();
+  // =========================
+  // MARK ALL AS READ
+  // =========================
+
+  Future<void> markAllAsRead() async {
+    state = state.map((e) => e.copyWith(isRead: true)).toList();
+    await _saveToPrefs();
   }
 
-  bool get hasUnread {
-    return state.any((e) => !e.isRead);
-  }
+  bool get hasUnread => state.any((e) => !e.isRead);
 }
 
 final notificationProvider =
-    StateNotifierProvider<NotificationNotifier,
-        List<NotificationModel>>(
+    StateNotifierProvider<NotificationNotifier, List<NotificationModel>>(
   (ref) => NotificationNotifier(),
 );

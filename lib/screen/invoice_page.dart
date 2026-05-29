@@ -8,6 +8,8 @@ import 'package:warteg_app/model/order_status_model.dart';
 import 'package:warteg_app/provider/order_provider.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 import 'package:warteg_app/provider/notification_provider.dart';
+import 'package:warteg_app/provider/navbar_provider.dart';
+import 'package:warteg_app/provider/order_tab_provider.dart';
 
 class InvoicePage extends ConsumerStatefulWidget {
   final OrderModel order;
@@ -110,30 +112,30 @@ class _InvoicePageState extends ConsumerState<InvoicePage> {
   }
 
   void cancelOrder() {
-  ref
-      .read(orderProvider.notifier)
-      .updateOrderStatus(widget.order.id, OrderStatusModel.dibatalkan);
+    ref
+        .read(orderProvider.notifier)
+        .updateOrderStatus(widget.order.id, OrderStatusModel.dibatalkan);
 
-  ref
-      .read(notificationProvider.notifier)
-      .addNotification(
-        title: 'Pesanan Dibatalkan',
-        message:
-            'Pesanan #${widget.order.id.substring(8)} berhasil dibatalkan',
-        orderId: widget.order.id,
-      );
+    ref
+        .read(notificationProvider.notifier)
+        .addNotification(
+          title: 'Pesanan Dibatalkan',
+          message:
+              'Pesanan #${widget.order.id.substring(8)} berhasil dibatalkan',
+          orderId: widget.order.id,
+        );
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text(
-        "Pesanan berhasil dibatalkan",
-        style: TextStyle(fontFamily: 'Poppins'),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Pesanan berhasil dibatalkan",
+          style: TextStyle(fontFamily: 'Poppins'),
+        ),
       ),
-    ),
-  );
+    );
 
-  Navigator.pop(context);
-}
+    Navigator.pop(context);
+  }
 
   void showCancelDialog() {
     showDialog(
@@ -236,41 +238,6 @@ class _InvoicePageState extends ConsumerState<InvoicePage> {
 
                 const SizedBox(height: 12),
               ],
-
-              SizedBox(
-                width: double.infinity,
-                height: 58,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.popUntil(context, (route) => route.isFirst);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ColorTheme.buttonPrimary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(22),
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.home_rounded, color: Colors.white),
-
-                      SizedBox(width: 10),
-
-                      Text(
-                        "Kembali ke Beranda",
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -284,7 +251,12 @@ class _InvoicePageState extends ConsumerState<InvoicePage> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () {
+                      ref.read(orderTabProvider.notifier).state =
+                          OrderStatusModel.bayar;
+                      ref.read(navbarIndexProvider.notifier).state = 2;
+                      Navigator.popUntil(context, (route) => route.isFirst);
+                    },
                     child: Container(
                       width: 42,
                       height: 42,

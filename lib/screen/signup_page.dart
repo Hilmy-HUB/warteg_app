@@ -7,24 +7,27 @@ import 'package:warteg_app/widgets/custom_text_field.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
-  SignupPage({super.key});
+  const SignupPage({super.key});
 
   @override
   ConsumerState<SignupPage> createState() => _SignupPageState();
 }
 
 class _SignupPageState extends ConsumerState<SignupPage> {
-
-  // PINDAHKAN CONTROLLER KE SINI
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
 
   @override
   void dispose() {
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
+    confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -91,31 +94,44 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
                         SizedBox(height: spacingLg),
 
+                        // USERNAME
                         CustomTextField(
                           controller: nameController,
                           judul: "Username",
                           petunjuk: "Your name",
                         ),
 
+                        // EMAIL
                         CustomTextField(
                           controller: emailController,
                           judul: "Email",
                           petunjuk: "Your email",
                         ),
 
-                        CustomTextField(
+                        // PASSWORD
+                        _buildPasswordField(
+                          label: "Password",
                           controller: passwordController,
-                          judul: "Password",
-                          petunjuk: "***",
-                          isPassword: true,
+                          obscure: _obscurePassword,
+                          onToggle: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                        ),
+
+                        // KONFIRMASI PASSWORD
+                        _buildPasswordField(
+                          label: "Confirm Password",
+                          controller: confirmPasswordController,
+                          obscure: _obscureConfirm,
+                          onToggle: () => setState(
+                            () => _obscureConfirm = !_obscureConfirm,
+                          ),
                         ),
 
                         if (state.isLoading)
                           const Padding(
                             padding: EdgeInsets.only(top: 12),
-                            child: Center(
-                              child: CircularProgressIndicator(),
-                            ),
+                            child: Center(child: CircularProgressIndicator()),
                           ),
                       ],
                     ),
@@ -150,12 +166,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           style: TextStyle(fontSize: bodyFontSize),
                         ),
                       ),
-
-                      Text(
-                        'and',
-                        style: TextStyle(fontSize: bodyFontSize),
-                      ),
-
+                      Text('and', style: TextStyle(fontSize: bodyFontSize)),
                       TextButton(
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
@@ -187,21 +198,18 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                         backgroundColor: ColorTheme.buttonPrimary,
                         elevation: 0,
                       ),
-
                       onPressed: () async {
-
                         // VALIDASI KOSONG
                         if (nameController.text.trim().isEmpty ||
                             emailController.text.trim().isEmpty ||
-                            passwordController.text.trim().isEmpty) {
-
+                            passwordController.text.trim().isEmpty ||
+                            confirmPasswordController.text.trim().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text("Semua field wajib diisi"),
                               backgroundColor: Colors.red,
                             ),
                           );
-
                           return;
                         }
 
@@ -213,21 +221,29 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                               backgroundColor: Colors.red,
                             ),
                           );
-
                           return;
                         }
 
-                        // VALIDASI PASSWORD
+                        // VALIDASI PASSWORD LENGTH
                         if (passwordController.text.length < 8) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text(
-                                "Password minimal 8 karakter",
-                              ),
+                              content: Text("Password minimal 8 karakter"),
                               backgroundColor: Colors.red,
                             ),
                           );
+                          return;
+                        }
 
+                        // VALIDASI KONFIRMASI PASSWORD
+                        if (passwordController.text !=
+                            confirmPasswordController.text) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Password tidak cocok"),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
                           return;
                         }
 
@@ -239,6 +255,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                               emailController.text.trim(),
                               passwordController.text.trim(),
                             );
+
+                        if (!mounted) return;
 
                         // ERROR
                         if (result != null) {
@@ -258,16 +276,12 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                               backgroundColor: Colors.green,
                             ),
                           );
-
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => SigninPage(),
-                            ),
+                            MaterialPageRoute(builder: (_) => SigninPage()),
                           );
                         }
                       },
-
                       child: Text(
                         'Continue',
                         style: TextStyle(
@@ -291,7 +305,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           color: Colors.grey[700],
                         ),
                       ),
-
                       TextButton(
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
@@ -300,16 +313,12 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           ),
                           foregroundColor: Colors.red,
                         ),
-
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => SigninPage(),
-                            ),
+                            MaterialPageRoute(builder: (_) => SigninPage()),
                           );
                         },
-
                         child: Text(
                           'Sign in',
                           style: TextStyle(fontSize: bodyFontSize),
@@ -324,12 +333,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   Row(
                     children: [
                       Expanded(
-                        child: Divider(
-                          thickness: 0.8,
-                          color: Colors.grey[350],
-                        ),
+                        child: Divider(thickness: 0.8, color: Colors.grey[350]),
                       ),
-
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12.0),
                         child: Text(
@@ -340,12 +345,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           ),
                         ),
                       ),
-
                       Expanded(
-                        child: Divider(
-                          thickness: 0.8,
-                          color: Colors.grey[350],
-                        ),
+                        child: Divider(thickness: 0.8, color: Colors.grey[350]),
                       ),
                     ],
                   ),
@@ -367,9 +368,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           onPressed: () {},
                         ),
                       ),
-
                       const SizedBox(width: 12),
-
                       Expanded(
                         child: _SocialButton(
                           icon: const FaIcon(
@@ -391,6 +390,58 @@ class _SignupPageState extends ConsumerState<SignupPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordField({
+    required String label,
+    required TextEditingController controller,
+    required bool obscure,
+    required VoidCallback onToggle,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: controller,
+            obscureText: obscure,
+            style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
+            decoration: InputDecoration(
+              hintText: "***",
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  obscure ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey,
+                  size: 20,
+                ),
+                onPressed: onToggle,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -15,15 +15,40 @@ class MenuPage extends StatefulWidget {
 
 class _MenuPageState extends State<MenuPage> {
   int _kategoriAktifIndex = 0;
+  String _searchQuery = '';                          // [BARU] state pencarian
+  final TextEditingController _searchController = TextEditingController(); // [BARU]
+
+  @override
+  void dispose() {
+    _searchController.dispose();                     // [BARU] bersihkan controller
+    super.dispose();
+  }
 
   List<ProductModel> get filteredMenu {
     final selectedId = category[_kategoriAktifIndex].id;
 
-    if (selectedId == "all") {
-      return allMenu;
+    // Filter by kategori
+    List<ProductModel> result = selectedId == "all"
+        ? allMenu
+        : allMenu.where((menu) => menu.category == selectedId).toList();
+
+    // [BARU] Filter by search query (nama menu, case-insensitive)
+    if (_searchQuery.isNotEmpty) {
+      result = result
+          .where((menu) =>
+              menu.menuName.toLowerCase().contains(_searchQuery.toLowerCase()))
+          .toList();
     }
 
-    return allMenu.where((menu) => menu.category == selectedId).toList();
+    return result;
+  }
+
+  // [BARU] Reset pencarian dan kategori
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+    });
   }
 
   @override
@@ -55,8 +80,14 @@ class _MenuPageState extends State<MenuPage> {
                   ],
                 ),
                 child: TextField(
+                  controller: _searchController,         // [BARU]
                   autofocus: false,
                   style: const TextStyle(fontFamily: 'Poppins', fontSize: 14),
+                  onChanged: (value) {                   // [BARU] update state saat mengetik
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
                   decoration: InputDecoration(
                     hintText: "Mau cari makan apa hari ini?",
                     hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -64,10 +95,16 @@ class _MenuPageState extends State<MenuPage> {
                       Icons.search,
                       color: ColorTheme.buttonPrimary,
                     ),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.tune, color: Colors.grey),
-                      onPressed: () {},
-                    ),
+                    // [BARU] Tampilkan tombol X hanya saat ada teks
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close, color: Colors.grey),
+                            onPressed: _clearSearch,
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.tune, color: Colors.grey),
+                            onPressed: () {},
+                          ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 15),
                   ),
@@ -102,15 +139,40 @@ class _MenuPageState extends State<MenuPage> {
               const SizedBox(height: 25),
 
               // ================= TITLE =================
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.0),
-                child: Text(
-                  "Semua Menu",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Poppins',
-                  ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Row(                            // [BARU] tampilkan info hasil search
+                  children: [
+                    Text(
+                      _searchQuery.isNotEmpty
+                          ? 'Hasil untuk "$_searchQuery"'
+                          : "Semua Menu",
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // [BARU] badge jumlah hasil
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: ColorTheme.buttonPrimary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${menuList.length}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Poppins',
+                          color: ColorTheme.buttonPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
@@ -122,40 +184,61 @@ class _MenuPageState extends State<MenuPage> {
                 child: menuList.isEmpty
                     ? SizedBox(
                         height: MediaQuery.of(context).size.height * 0.5,
-                        child: const Center(
+                        child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.no_food, size: 80, color: Colors.grey),
-                              SizedBox(height: 10),
+                              const Icon(Icons.search_off,
+                                  size: 80, color: Colors.grey), // [BARU] icon lebih relevan
+                              const SizedBox(height: 10),
                               Text(
-                                "Menu belum tersedia",
-                                style: TextStyle(
+                                _searchQuery.isNotEmpty      // [BARU] pesan dinamis
+                                    ? 'Menu "$_searchQuery" tidak ditemukan'
+                                    : "Menu belum tersedia",
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.grey,
                                 ),
+                                textAlign: TextAlign.center,
                               ),
-                              SizedBox(height: 5),
+                              const SizedBox(height: 5),
                               Text(
-                                "Coba pilih kategori lain",
-                                style: TextStyle(color: Colors.grey),
+                                _searchQuery.isNotEmpty      // [BARU] saran dinamis
+                                    ? "Coba kata kunci lain"
+                                    : "Coba pilih kategori lain",
+                                style:
+                                    const TextStyle(color: Colors.grey),
                               ),
+                              // [BARU] tombol hapus pencarian jika ada query
+                              if (_searchQuery.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                TextButton.icon(
+                                  onPressed: _clearSearch,
+                                  icon: const Icon(Icons.refresh,
+                                      color: ColorTheme.buttonPrimary),
+                                  label: const Text(
+                                    "Reset Pencarian",
+                                    style: TextStyle(
+                                        color: ColorTheme.buttonPrimary),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
                       )
                     : GridView.builder(
-                        padding: const EdgeInsets.only(bottom : 70),
+                        padding: const EdgeInsets.only(bottom: 70),
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 0,
-                              mainAxisSpacing: 15,
-                              childAspectRatio: 0.85,
-                            ),
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 0,
+                          mainAxisSpacing: 15,
+                          childAspectRatio: 0.85,
+                        ),
                         itemCount: menuList.length,
                         itemBuilder: (context, index) {
                           return MenuCard(menu: menuList[index]);

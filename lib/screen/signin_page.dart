@@ -17,10 +17,11 @@ class _SigninPageState extends ConsumerState<SigninPage> {
   late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
 
+  bool _obscurePassword = true;
+
   @override
   void initState() {
     super.initState();
-
     _emailController = TextEditingController();
     _passwordController = TextEditingController();
   }
@@ -36,7 +37,6 @@ class _SigninPageState extends ConsumerState<SigninPage> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    // VALIDASI KOSONG
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -47,7 +47,6 @@ class _SigninPageState extends ConsumerState<SigninPage> {
       return;
     }
 
-    // VALIDASI EMAIL
     if (!email.contains("@")) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -58,33 +57,20 @@ class _SigninPageState extends ConsumerState<SigninPage> {
       return;
     }
 
-    // LOGIN
     final result = await ref
         .read(authControllerProvider.notifier)
-        .login(
-          email,
-          password,
-        );
+        .login(email, password);
 
     if (!mounted) return;
 
-    // ERROR
     if (result != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(result), backgroundColor: Colors.red),
       );
-    }
-
-    // SUCCESS
-    else {
+    } else {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => Home(),
-        ),
+        MaterialPageRoute(builder: (_) => Home()),
         (_) => false,
       );
     }
@@ -103,11 +89,9 @@ class _SigninPageState extends ConsumerState<SigninPage> {
 
     final double horizontalPadding = isTablet ? w * 0.12 : 20.0;
     final double cardPadding = isTablet ? 32.0 : (isSmallPhone ? 18.0 : 24.0);
-    final double titleFontSize =
-        isTablet ? 22.0 : (isSmallPhone ? 16.0 : 18.0);
+    final double titleFontSize = isTablet ? 22.0 : (isSmallPhone ? 16.0 : 18.0);
     final double bodyFontSize = isTablet ? 15.0 : 13.0;
-    final double buttonHeight =
-        isTablet ? 56.0 : (isSmallPhone ? 46.0 : 52.0);
+    final double buttonHeight = isTablet ? 56.0 : (isSmallPhone ? 46.0 : 52.0);
     final double buttonFontSize = isTablet ? 17.0 : 15.0;
     final double spacingLg = isSmallPhone ? 16.0 : 24.0;
     final double spacingMd = isSmallPhone ? 10.0 : 16.0;
@@ -121,13 +105,9 @@ class _SigninPageState extends ConsumerState<SigninPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.black87,
-          ),
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
         ),
       ),
 
@@ -138,32 +118,26 @@ class _SigninPageState extends ConsumerState<SigninPage> {
               horizontal: horizontalPadding,
               vertical: 16,
             ),
-
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxWidth: isTablet ? 480.0 : double.infinity,
               ),
-
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
-
                 children: [
 
                   // --- FORM CARD ---
                   Container(
                     width: double.infinity,
                     padding: EdgeInsets.all(cardPadding),
-
                     decoration: BoxDecoration(
                       color: ColorTheme.primaryColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
-
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
-
                       children: [
                         Text(
                           "Sign In",
@@ -177,25 +151,27 @@ class _SigninPageState extends ConsumerState<SigninPage> {
 
                         SizedBox(height: spacingLg),
 
+                        // EMAIL
                         CustomTextField(
                           controller: _emailController,
                           judul: "Email",
                           petunjuk: "Your email",
                         ),
 
-                        CustomTextField(
+                        // PASSWORD
+                        _buildPasswordField(
+                          label: "Password",
                           controller: _passwordController,
-                          judul: "Password",
-                          petunjuk: "***",
-                          isPassword: true,
+                          obscure: _obscurePassword,
+                          onToggle: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
                         ),
 
                         if (isLoading)
                           const Padding(
                             padding: EdgeInsets.only(top: 8),
-                            child: Center(
-                              child: CircularProgressIndicator(),
-                            ),
+                            child: Center(child: CircularProgressIndicator()),
                           ),
                       ],
                     ),
@@ -204,7 +180,6 @@ class _SigninPageState extends ConsumerState<SigninPage> {
                   // --- FORGOT PASSWORD ---
                   Align(
                     alignment: Alignment.centerRight,
-
                     child: TextButton(
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.redAccent,
@@ -213,14 +188,10 @@ class _SigninPageState extends ConsumerState<SigninPage> {
                           vertical: 0,
                         ),
                       ),
-
                       onPressed: () {},
-
                       child: Text(
                         'Forgot Password?',
-                        style: TextStyle(
-                          fontSize: bodyFontSize,
-                        ),
+                        style: TextStyle(fontSize: bodyFontSize),
                       ),
                     ),
                   ),
@@ -231,7 +202,6 @@ class _SigninPageState extends ConsumerState<SigninPage> {
                   SizedBox(
                     width: MediaQuery.of(context).size.width * 0.6,
                     height: buttonHeight,
-
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         shape: RoundedRectangleBorder(
@@ -240,9 +210,7 @@ class _SigninPageState extends ConsumerState<SigninPage> {
                         backgroundColor: ColorTheme.buttonPrimary,
                         elevation: 0,
                       ),
-
                       onPressed: isLoading ? null : _handleSignIn,
-
                       child: Text(
                         'Continue',
                         style: TextStyle(
@@ -257,10 +225,9 @@ class _SigninPageState extends ConsumerState<SigninPage> {
 
                   SizedBox(height: spacingSm),
 
-                  // --- DON'T HAVE ACCOUNT ---
+                  // --- SIGN UP LINK ---
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-
                     children: [
                       Text(
                         "Don't have an account?",
@@ -269,7 +236,6 @@ class _SigninPageState extends ConsumerState<SigninPage> {
                           color: Colors.grey[700],
                         ),
                       ),
-
                       TextButton(
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
@@ -278,14 +244,10 @@ class _SigninPageState extends ConsumerState<SigninPage> {
                           ),
                           foregroundColor: Colors.redAccent,
                         ),
-
                         onPressed: () => Navigator.pop(context),
-
                         child: Text(
                           'Sign up',
-                          style: TextStyle(
-                            fontSize: bodyFontSize,
-                          ),
+                          style: TextStyle(fontSize: bodyFontSize),
                         ),
                       ),
                     ],
@@ -297,15 +259,10 @@ class _SigninPageState extends ConsumerState<SigninPage> {
                   Row(
                     children: [
                       Expanded(
-                        child: Divider(
-                          thickness: 0.8,
-                          color: Colors.grey[350],
-                        ),
+                        child: Divider(thickness: 0.8, color: Colors.grey[350]),
                       ),
-
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12.0),
-
                         child: Text(
                           'or',
                           style: TextStyle(
@@ -314,12 +271,8 @@ class _SigninPageState extends ConsumerState<SigninPage> {
                           ),
                         ),
                       ),
-
                       Expanded(
-                        child: Divider(
-                          thickness: 0.8,
-                          color: Colors.grey[350],
-                        ),
+                        child: Divider(thickness: 0.8, color: Colors.grey[350]),
                       ),
                     ],
                   ),
@@ -336,15 +289,12 @@ class _SigninPageState extends ConsumerState<SigninPage> {
                             size: 17,
                             color: Color(0xFFEA4335),
                           ),
-
                           label: 'Google',
                           height: buttonHeight,
                           onPressed: () {},
                         ),
                       ),
-
                       const SizedBox(width: 12),
-
                       Expanded(
                         child: _SocialButton(
                           icon: const FaIcon(
@@ -352,7 +302,6 @@ class _SigninPageState extends ConsumerState<SigninPage> {
                             size: 20,
                             color: Colors.black87,
                           ),
-
                           label: 'Apple',
                           height: buttonHeight,
                           onPressed: () {},
@@ -367,6 +316,58 @@ class _SigninPageState extends ConsumerState<SigninPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordField({
+    required String label,
+    required TextEditingController controller,
+    required bool obscure,
+    required VoidCallback onToggle,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: controller,
+            obscureText: obscure,
+            style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
+            decoration: InputDecoration(
+              hintText: "***",
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  obscure ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey,
+                  size: 20,
+                ),
+                onPressed: onToggle,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -389,29 +390,19 @@ class _SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: height,
-
       child: OutlinedButton(
         style: OutlinedButton.styleFrom(
-          side: BorderSide(
-            color: Colors.grey[300]!,
-            width: 1.2,
-          ),
-
+          side: BorderSide(color: Colors.grey[300]!, width: 1.2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-
         onPressed: onPressed,
-
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-
           children: [
             icon,
-
             const SizedBox(width: 8),
-
             Text(
               label,
               style: const TextStyle(

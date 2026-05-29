@@ -122,7 +122,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           : null,
     );
 
-    ref.read(orderProvider.notifier).addOrder(order);
+    await ref.read(orderProvider.notifier).addOrder(order);
 
     ref
         .read(notificationProvider.notifier)

@@ -8,20 +8,14 @@ class OrderModel {
   final List<CartItemModel> items;
   final AddressModel address;
   final PaymentMethodModel paymentMethod;
-
   final int subtotal;
   final int ongkir;
   final int discount;
   final int total;
-
   final DateTime createdAt;
-
   final OrderStatusModel status;
-
   final String? vaNumber;
-
   final DateTime expiredAt;
-
   final DateTime? cancelExpiredAt;
 
   OrderModel({
@@ -69,6 +63,60 @@ class OrderModel {
       vaNumber: vaNumber ?? this.vaNumber,
       expiredAt: expiredAt ?? this.expiredAt,
       cancelExpiredAt: cancelExpiredAt ?? this.cancelExpiredAt,
+    );
+  }
+
+  // ================= TO JSON =================
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'items': items.map((e) => e.toJson()).toList(),
+      'address': address.toJson(),
+      'paymentMethod': {
+        'name': paymentMethod.name,
+        'image': paymentMethod.image,
+        'isSelected': paymentMethod.isSelected,
+      },
+      'subtotal': subtotal,
+      'ongkir': ongkir,
+      'discount': discount,
+      'total': total,
+      'createdAt': createdAt.toIso8601String(),
+      'status': status.name,
+      'vaNumber': vaNumber,
+      'expiredAt': expiredAt.toIso8601String(),
+      'cancelExpiredAt': cancelExpiredAt?.toIso8601String(),
+    };
+  }
+
+  // ================= FROM JSON =================
+
+  factory OrderModel.fromJson(Map<String, dynamic> json) {
+    return OrderModel(
+      id: json['id'],
+      items: (json['items'] as List)
+          .map((e) => CartItemModel.fromJson(e))
+          .toList(),
+      address: AddressModel.fromJson(json['address']),
+      paymentMethod: PaymentMethodModel(
+        name: json['paymentMethod']['name'],
+        image: json['paymentMethod']['image'],
+        isSelected: json['paymentMethod']['isSelected'] ?? false,
+      ),
+      subtotal: json['subtotal'],
+      ongkir: json['ongkir'],
+      discount: json['discount'],
+      total: json['total'],
+      createdAt: DateTime.parse(json['createdAt']),
+      status: OrderStatusModel.values.firstWhere(
+        (e) => e.name == json['status'],
+      ),
+      vaNumber: json['vaNumber'],
+      expiredAt: DateTime.parse(json['expiredAt']),
+      cancelExpiredAt: json['cancelExpiredAt'] != null
+          ? DateTime.parse(json['cancelExpiredAt'])
+          : null,
     );
   }
 }
