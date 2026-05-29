@@ -61,12 +61,12 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
   Future<void> _placeOrder(dynamic checkout) async {
     if (checkout.selectedAddress == null) {
-      _showSnack('Please select a delivery address first', isError: true);
+      _showSnack('Pilih alamat pengiriman terlebih dahulu', isError: true);
       return;
     }
 
     if (checkout.paymentMethod == null) {
-      _showSnack('Please select a payment method first', isError: true);
+      _showSnack('Pilih metode pembayaran terlebih dahulu', isError: true);
       return;
     }
 
@@ -240,9 +240,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                     ),
                     icon: Icons.location_on_rounded,
                     iconColor: ColorTheme.buttonPrimary,
-                    title: 'Delivery Address',
+                    title: 'Alamat Pengiriman',
                     subtitle: checkout.selectedAddress == null
-                        ? 'Select a delivery address'
+                        ? 'Pilih alamat pengiriman'
                         : checkout.selectedAddress!.fullAddress,
                     subtitleColor: checkout.selectedAddress == null
                         ? Colors.grey.shade400
@@ -257,7 +257,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
                   // 2. Order Items
                   _SectionLabel(
-                    label: 'Order Items (${checkout.items.length})',
+                    label: 'Item Pesanan (${checkout.items.length})',
                   ),
                   const SizedBox(height: 12),
 
@@ -269,7 +269,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                   const SizedBox(height: 20),
 
                   // 3. Promo & Discount
-                  _SectionLabel(label: 'Promo & Discount'),
+                  _SectionLabel(label: 'Promo & Diskon'),
                   const SizedBox(height: 12),
                   _SectionCard(
                     onTap: () => Navigator.push(
@@ -279,9 +279,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                     icon: Icons.local_offer_rounded,
                     iconColor: const Color(0xFFF59E0B),
                     iconBg: const Color(0xFFFFFBEB),
-                    title: 'Use a Promo Code',
+                    title: 'Gunakan Kode Promo',
                     subtitle: checkout.selectedPromo == null
-                        ? 'Tap to browse available promos'
+                        ? 'Ketuk untuk melihat promo yang tersedia'
                         : checkout.selectedPromo!.code,
                     subtitleColor: checkout.selectedPromo == null
                         ? Colors.grey.shade400
@@ -327,9 +327,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                     },
                     icon: Icons.payment_rounded,
                     iconColor: ColorTheme.buttonPrimary,
-                    title: 'Payment Method',
+                    title: 'Metode Pembayaran',
                     subtitle: checkout.paymentMethod == null
-                        ? 'Choose payment method'
+                        ? 'Pilih metode pembayaran'
                         : checkout.paymentMethod!.name,
                     subtitleColor: checkout.paymentMethod == null
                         ? Colors.grey.shade400
@@ -397,7 +397,7 @@ class _AppBar extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           const Text(
-            'Order Details',
+            'Detail Pesanan',
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 20,
@@ -689,13 +689,13 @@ class _PriceSummary extends StatelessWidget {
           _SummaryRow(label: 'Subtotal', value: 'Rp ${formatRupiah(subtotal)}'),
           const SizedBox(height: 10),
           _SummaryRow(
-            label: 'Delivery Fee',
+            label: 'Ongkos Kirim',
             icon: Icons.directions_bike_rounded,
             value: 'Rp ${formatRupiah(ongkir)}',
           ),
           const SizedBox(height: 10),
           _SummaryRow(
-            label: 'Promo Discount',
+            label: 'Promo Diskon',
             icon: Icons.local_offer_rounded,
             value: promoDiscount == 0
                 ? 'Rp 0'
@@ -706,9 +706,9 @@ class _PriceSummary extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _SummaryRow(
-            label: 'Payment Method',
+            label: 'Metode Pembayaran',
             icon: Icons.payment_rounded,
-            value: paymentMethod ?? 'Not selected',
+            value: paymentMethod ?? 'Tidak dipilih',
             valueColor: paymentMethod != null
                 ? ColorTheme.buttonPrimary
                 : Colors.grey.shade400,
@@ -833,7 +833,7 @@ class _BottomBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Total Payment',
+                  'Total Pembayaran',
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 11.5,
@@ -887,7 +887,7 @@ class _BottomBar extends StatelessWidget {
                         ),
                         SizedBox(width: 8),
                         Text(
-                          'Place Order',
+                          'Pesan Sekarang',
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w700,

@@ -40,7 +40,7 @@ class _SigninPageState extends ConsumerState<SigninPage> {
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fill in all fields'),
+          content: Text('Silakan isi semua kolom'),
           backgroundColor: Colors.red,
         ),
       );
@@ -51,7 +51,7 @@ class _SigninPageState extends ConsumerState<SigninPage> {
     if (!email.contains("@")) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Email is not valid'),
+          content: Text('Email tidak valid'),
           backgroundColor: Colors.red,
         ),
       );

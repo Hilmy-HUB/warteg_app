@@ -94,11 +94,14 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   // LOGOUT
   // ======================================
 
-  Future<void> logout() async {
+   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.remove("isLogin");
+    await prefs.remove('isLoggedIn');
+    await prefs.remove('user');
+    await prefs.remove('token');
 
-    ref.read(currentUserProvider.notifier).state = null;
+    // atau kalau mau bersih total:
+    // await prefs.clear();
   }
 }

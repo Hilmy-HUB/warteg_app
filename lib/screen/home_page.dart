@@ -116,7 +116,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   Text(
                                     selectedAddress != null
                                         ? selectedAddress.label
-                                        : "Deliver to",
+                                        : "Kirim ke alamat mana?",
                                     style: TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 11,
@@ -127,12 +127,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   Text(
                                     selectedAddress != null
                                         ? selectedAddress.fullAddress
-                                        : "Tap to set address",
+                                        : "Pilih alamat pengiriman",
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       fontFamily: 'Poppins',
-                                      fontSize: 15,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
                                     ),
@@ -321,7 +321,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   // RECOMMENDED
                   // =====================================================
                   buildSectionTitle(
-                    title: "Recommended",
+                    title: "Rekomendasi",
                     subtitle: "Pilihan terbaik untuk kamu",
                   ),
                   const SizedBox(height: 14),
@@ -343,7 +343,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   // TOP OF WEEK
                   // =====================================================
                   buildSectionTitle(
-                    title: "Top of Week",
+                    title: "Terbaik Minggu Ini",
                     subtitle: "Menu paling populer minggu ini",
                   ),
                   const SizedBox(height: 14),

@@ -165,7 +165,7 @@ class _CartAppBar extends StatelessWidget {
           const SizedBox(width: 14),
 
           const Text(
-            'My Cart',
+            'Keranjang Saya',
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 20,
@@ -201,7 +201,7 @@ class _CartAppBar extends StatelessWidget {
                           ),
                           SizedBox(width: 5),
                           Text(
-                            'Remove',
+                            'Hapus',
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 12,
@@ -263,7 +263,7 @@ class _SelectAllRow extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           const Text(
-            'Select All',
+            'Pilih Semua',
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 13.5,
@@ -670,8 +670,8 @@ class _BottomBar extends StatelessWidget {
                 ),
                 child: Text(
                   hasSelection
-                      ? '$selectedCount ${selectedCount == 1 ? 'item' : 'items'} selected'
-                      : 'No items selected',
+                      ? '$selectedCount ${selectedCount == 1 ? 'Item' : 'Items'} dipilih'
+                      : 'Tidak ada item yang dipilih',
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 12,
@@ -742,8 +742,8 @@ class _BottomBar extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     hasSelection
-                        ? 'Checkout ($selectedCount ${selectedCount == 1 ? 'item' : 'items'})'
-                        : 'Select items to checkout',
+                        ? 'Pesan ($selectedCount ${selectedCount == 1 ? 'Item' : 'Items'})'
+                        : 'Pilih item untuk checkout',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w700,

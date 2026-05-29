@@ -42,7 +42,7 @@ class ProfilPage extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "My Profile",
+                          "Profil Saya",
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 22,
@@ -171,8 +171,8 @@ class ProfilPage extends ConsumerWidget {
 
               _buildMenuItem(
                 icon: Icons.person_outline_rounded,
-                title: "My Account",
-                subtitle: "Make changes to your account",
+                title: "Akun Saya",
+                subtitle: "Lakukan perubahan pada akun Anda",
                 onTap: () {
                   Navigator.push(
                     context,
@@ -183,8 +183,8 @@ class ProfilPage extends ConsumerWidget {
 
               _buildMenuItem(
                 icon: Icons.credit_card_rounded,
-                title: "Payments",
-                subtitle: "Manage your billings and payments",
+                title: "Pembayaran",
+                subtitle: "Kelola tagihan dan pembayaran Anda",
                 onTap: () {
                   Navigator.push(
                     context,
@@ -196,7 +196,7 @@ class ProfilPage extends ConsumerWidget {
               _buildMenuItem(
                 icon: Icons.discount_outlined,
                 title: "Promo",
-                subtitle: "Apply coupon codes and earn discount",
+                subtitle: "Terapkan kode kupon dan dapatkan diskon",
                 onTap: () {
                   Navigator.push(
                     context,
@@ -206,9 +206,9 @@ class ProfilPage extends ConsumerWidget {
               ),
 
               _buildMenuItem(
-                icon: Icons.restaurant_menu_rounded,
-                title: "Subscriptions",
-                subtitle: "Manage your meal plans",
+                icon: Icons.restaurant_menu_outlined,
+                title: "Berlangganan",
+                subtitle: "Kelola langganan dan paket Anda",
               ),
 
               const SizedBox(height: 10),
@@ -219,21 +219,21 @@ class ProfilPage extends ConsumerWidget {
               _buildSectionTitle("General"),
 
               _buildMenuItem(
-                icon: Icons.accessibility_new_rounded,
-                title: "Accessibility",
-                subtitle: "Customize your experience",
+                icon: Icons.language_outlined,
+                title: "Bahasa",
+                subtitle: "Pilih bahasa yang Anda inginkan",
               ),
 
               _buildMenuItem(
                 icon: Icons.help_outline_rounded,
-                title: "Help & Support",
-                subtitle: "Get help from customer service",
+                title: "Bantuan & Dukungan",
+                subtitle: "Dapatkan bantuan dari layanan pelanggan",
               ),
 
               _buildMenuItem(
                 icon: Icons.info_outline_rounded,
-                title: "About App",
-                subtitle: "Version 1.0.0",
+                title: "Tentang Aplikasi",
+                subtitle: "Versi 1.0.0",
               ),
 
               const SizedBox(height: 10),
@@ -247,13 +247,10 @@ class ProfilPage extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
 
                   onTap: () async {
-                    // LOGOUT SERVICE
                     await ref.read(authServiceProvider).logout();
 
-                    // CLEAR PROVIDER
                     ref.read(currentUserProvider.notifier).state = null;
 
-                    // PINDAH KE LOGIN
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(builder: (_) => LandingPage()),
@@ -278,7 +275,7 @@ class ProfilPage extends ConsumerWidget {
 
                         Expanded(
                           child: Text(
-                            "Log Out",
+                            "Keluar",
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 15,

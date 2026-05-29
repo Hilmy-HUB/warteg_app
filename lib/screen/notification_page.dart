@@ -59,7 +59,7 @@ class NotificationPage extends ConsumerWidget {
         elevation: 0,
         centerTitle: true,
         title: const Text(
-          'Notifications',
+          'Notifikasi',
           style: TextStyle(
             fontFamily: 'Poppins',
             fontWeight: FontWeight.bold,

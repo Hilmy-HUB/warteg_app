@@ -76,7 +76,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
       return;
     }
 
-    _showSnack('Payment method selected successfully');
+    _showSnack('Metode pembayaran sukses dipilih');
     HapticFeedback.lightImpact();
   }
 
@@ -131,7 +131,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   ),
                   const SizedBox(width: 14),
                   const Text(
-                    "Payment Method",
+                    "Metode Pembayaran",
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 20,
@@ -191,7 +191,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Choose Payment",
+                            "Pilih Metode Pembayaran",
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 21,
@@ -201,7 +201,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                           ),
                           SizedBox(height: 6),
                           Text(
-                            "Select your preferred payment method for faster checkout experience.",
+                            "Pilih metode pembayaran yang Anda inginkan untuk pengalaman checkout yang lebih cepat.",
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 12.5,
@@ -499,7 +499,7 @@ class _PaymentTile extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
-                            "Selected",
+                            "Dipilih",
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 10,
@@ -530,7 +530,7 @@ class _PaymentTile extends StatelessWidget {
                               ),
                               SizedBox(width: 4),
                               Text(
-                                "Saved",
+                                "Tersimpan",
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 10,
@@ -573,7 +573,7 @@ class _PaymentTile extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         requiresForm
-                            ? "Tap to enter account details"
+                            ? "Klik untuk melihat detail"
                             : _getFeature(method.name),
                         style: TextStyle(
                           fontFamily: 'Poppins',
@@ -639,42 +639,42 @@ class _PaymentTile extends StatelessWidget {
   String _getDesc(String name) {
     switch (name) {
       case "COD":
-        return "Pay directly when your order arrives at your location.";
+        return "Bayar saat pesanan tiba di lokasi Anda.";
       case "BCA":
-        return "Transfer payment via Bank Central Asia.";
+        return "Pembayaran mudah melalui Bank BCA virtual account.";
       case "BNI":
-        return "Secure payment using BNI virtual account.";
+        return "Pembayaran aman menggunakan virtual account BNI.";
       case "Mandiri":
-        return "Easy transfer through Bank Mandiri.";
+        return "Transfer mudah melalui Bank Mandiri.";
       case "Mastercard":
-        return "Fast payment using debit or credit card.";
+        return "Pembayaran aman menggunakan Mastercard.";
       case "DANA":
-        return "Digital wallet payment using DANA.";
+        return "Pembayaran digital menggunakan DANA.";
       case "GoPay":
-        return "Instant payment with GoPay e-wallet.";
+        return "Pembayaran instan dengan dompet elektronik GoPay.";
       case "OVO":
-        return "Quick cashless payment using OVO.";
+        return "Pembayaran cashless cepat menggunakan OVO.";
       default:
-        return "Available payment method";
+        return "Metode pembayaran yang aman dan terpercaya.";
     }
   }
 
   String _getFeature(String name) {
     switch (name) {
       case "COD":
-        return "Cash payment available";
+        return "Pembayaran tunai tersedia";
       case "BCA":
       case "BNI":
       case "Mandiri":
-        return "24/7 bank transfer";
+        return "Transfer bank 24/7";
       case "Mastercard":
-        return "Secure payment gateway";
+        return "Pembayaran dengan kartu kredit/debit";
       case "DANA":
       case "GoPay":
       case "OVO":
-        return "Instant verification";
+        return "Pembayaran digital cepat";
       default:
-        return "Safe & secure payment";
+        return "Pembayaran mudah dan aman";
     }
   }
 }

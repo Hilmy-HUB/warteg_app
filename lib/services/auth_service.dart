@@ -1,15 +1,15 @@
 import 'dart:convert';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-
   // =========================
   // KEYS
   // =========================
 
   static const String usersKey = "users";
   static const String currentUserKey = "current_user";
+  static const String keyIsLoggedIn = 'isLogin';
+  static const String keyToken = 'token';
 
   // =========================
   // CURRENT USER
@@ -26,7 +26,6 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-
     final prefs = await SharedPreferences.getInstance();
 
     final usersString = prefs.getString(usersKey);
@@ -40,11 +39,7 @@ class AuthService {
 
     // CEK EMAIL SUDAH ADA
     final exists = users.any(
-      (u) =>
-          u['email']
-              .toString()
-              .toLowerCase() ==
-          email.toLowerCase(),
+      (u) => u['email'].toString().toLowerCase() == email.toLowerCase(),
     );
 
     if (exists) {
@@ -62,10 +57,7 @@ class AuthService {
     users.add(newUser);
 
     // SIMPAN SEMUA USER
-    await prefs.setString(
-      usersKey,
-      jsonEncode(users),
-    );
+    await prefs.setString(usersKey, jsonEncode(users));
 
     return null;
   }
@@ -78,7 +70,6 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-
     final prefs = await SharedPreferences.getInstance();
 
     final usersString = prefs.getString(usersKey);
@@ -91,32 +82,26 @@ class AuthService {
     List users = jsonDecode(usersString);
 
     try {
-
       // CARI USER
       final user = users.firstWhere(
-        (u) =>
-            u['email']
-                .toString()
-                .toLowerCase() ==
-            email.toLowerCase(),
+        (u) => u['email'].toString().toLowerCase() == email.toLowerCase(),
       );
 
       // PASSWORD SALAH
       if (user['password'] != password) {
-        return "Password salah";
+        return "Password atau email salah";
       }
 
       // SIMPAN CURRENT USER
       currentUser = user;
 
       // SIMPAN SESSION LOGIN
-      await prefs.setString(
-        currentUserKey,
-        jsonEncode(user),
-      );
+      await prefs.setString(currentUserKey, jsonEncode(user));
+      await prefs.setBool(keyIsLoggedIn, true);
+      await prefs.setString("username", user['username']);
+      await prefs.setString("email", user['email']);
 
       return null;
-
     } catch (e) {
       return "Akun tidak ditemukan";
     }
@@ -127,14 +112,11 @@ class AuthService {
   // =========================
 
   Future<Map<String, dynamic>?> getLoggedInUser() async {
-
     final prefs = await SharedPreferences.getInstance();
 
     final userString = prefs.getString(currentUserKey);
 
-    if (userString == null) {
-      return null;
-    }
+    if (userString == null) return null;
 
     currentUser = jsonDecode(userString);
 
@@ -146,11 +128,15 @@ class AuthService {
   // =========================
 
   Future<void> logout() async {
-
     final prefs = await SharedPreferences.getInstance();
 
-    currentUser = null;
-
     await prefs.remove(currentUserKey);
+    await prefs.remove(keyIsLoggedIn);
+    await prefs.remove("username");
+    await prefs.remove("email");
+    await prefs.remove(keyToken);
+
+    // Reset current user di memory
+    currentUser = null;
   }
 }

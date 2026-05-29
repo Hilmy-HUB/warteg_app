@@ -38,17 +38,11 @@ class _OrderPageState extends ConsumerState<OrderPage>
       vsync: this,
       initialIndex: initialIndex,
     );
-
-    // ✅ INI KUNCI FIX
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging) return;
-
-      final newStatus = tabs[_tabController.index];
-      ref.read(orderTabProvider.notifier).state = newStatus;
-    });
-
+    
     timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
     });
   }
 
@@ -105,14 +99,8 @@ class _OrderPageState extends ConsumerState<OrderPage>
     return buf.toString();
   }
 
-  bool canCancelOrder(OrderModel order) {
-    const cancellableMethods = {"COD", "DANA", "GoPay", "OVO", "Mastercard"};
-
-    final isCancellableMethod = cancellableMethods.contains(
-      order.paymentMethod.name,
-    );
-
-    if (!isCancellableMethod) return false;
+  bool canCancelCOD(OrderModel order) {
+    if (order.paymentMethod.name != "COD") return false;
 
     if (order.status != OrderStatusModel.diproses) return false;
 
@@ -505,7 +493,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
             // =========================
             // COD CANCEL
             // =========================
-            if (canCancelOrder(order)) ...[
+            if (canCancelCOD(order)) ...[
               const SizedBox(height: 18),
 
               Container(

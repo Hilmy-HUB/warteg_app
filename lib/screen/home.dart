@@ -103,7 +103,7 @@ class Home extends ConsumerWidget {
                         BottomNavigationBarItem(
                           icon: Icon(Icons.home_outlined),
                           activeIcon: Icon(Icons.home),
-                          label: "Home",
+                          label: "Beranda",
                         ),
 
                         BottomNavigationBarItem(
@@ -115,7 +115,7 @@ class Home extends ConsumerWidget {
                         BottomNavigationBarItem(
                           icon: Icon(Icons.receipt_long_outlined),
                           activeIcon: Icon(Icons.receipt_long),
-                          label: "Order",
+                          label: "Pesanan",
                         ),
 
                         BottomNavigationBarItem(

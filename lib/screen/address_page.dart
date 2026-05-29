@@ -73,7 +73,7 @@ class _AddressPageState extends ConsumerState<AddressPage> {
       Navigator.pop(context);
     }
 
-    _showSnack('Address saved successfully');
+    _showSnack('Alamat berhasil disimpan');
   }
 
   void _updateAddress(String id) {
@@ -83,7 +83,7 @@ class _AddressPageState extends ConsumerState<AddressPage> {
     final fullAddress = _addressController.text.trim();
 
     if (label.isEmpty || receiver.isEmpty || phone.isEmpty || fullAddress.isEmpty) {
-      _showSnack('Please fill in all required fields', isError: true);
+      _showSnack('Silakan isi semua kolom yang diperlukan', isError: true);
       return;
     }
 
@@ -104,7 +104,7 @@ class _AddressPageState extends ConsumerState<AddressPage> {
       Navigator.pop(context);
     }
 
-    _showSnack('Address updated successfully');
+    _showSnack('Alamat berhasil diperbarui');
   }
 
   void _openEditModal(AddressModel address) {
@@ -189,7 +189,7 @@ class _AddressPageState extends ConsumerState<AddressPage> {
         elevation: 3,
         icon: const Icon(Icons.add_location_alt_rounded, color: Colors.white),
         label: const Text(
-          'Add Address',
+          'Tambah Alamat',
           style: TextStyle(
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w700,
@@ -234,7 +234,7 @@ class _AddressPageState extends ConsumerState<AddressPage> {
                             ref
                                 .read(addressProvider.notifier)
                                 .removeAddress(address.id);
-                            _showSnack('Address deleted successfully');
+                            _showSnack('Alamat berhasil dihapus');
                             HapticFeedback.mediumImpact();
                           },
                           child: _AddressCard(
@@ -246,7 +246,7 @@ class _AddressPageState extends ConsumerState<AddressPage> {
                               ref
                                   .read(checkoutProvider.notifier)
                                   .selectAddress(address);
-                              _showSnack('Address selected successfully');
+                              _showSnack('Alamat berhasil dipilih');
                               HapticFeedback.lightImpact();
                             },
                             onEdit: () => _openEditModal(address),
@@ -299,7 +299,7 @@ class _AddressAppBar extends StatelessWidget {
           ),
           const SizedBox(width: 14),
           const Text(
-            'My Addresses',
+            'Alamat Saya',
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 20,
@@ -340,7 +340,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           const Text(
-            'No addresses yet',
+            'Belum ada alamat tersimpan',
             style: TextStyle(
               fontFamily: 'Poppins',
               fontWeight: FontWeight.w700,
@@ -350,7 +350,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Tap the button below to add one',
+            'Ketuk tombol di bawah untuk menambahkan alamat',
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 13,
@@ -458,7 +458,7 @@ class _AddressCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
-                            'Selected',
+                            'Dipilih',
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 10,
@@ -682,7 +682,7 @@ class _AddAddressSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  isEditing ? 'Edit Address' : 'Add New Address',
+                  isEditing ? 'Edit Alamat' : 'Tambah Alamat Baru',
                   style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w800,
@@ -698,33 +698,33 @@ class _AddAddressSheet extends StatelessWidget {
 
             _SheetField(
               controller: labelController,
-              hint: 'Label (e.g. Home, Office)',
+              hint: 'Label (Misal: Rumah, Kantor, dll)',
               icon: Icons.label_rounded,
             ),
             const SizedBox(height: 12),
             _SheetField(
               controller: receiverController,
-              hint: 'Recipient name',
+              hint: 'Nama penerima',
               icon: Icons.person_rounded,
             ),
             const SizedBox(height: 12),
             _SheetField(
               controller: phoneController,
-              hint: 'Phone number',
+              hint: 'Nomor telepon',
               icon: Icons.phone_rounded,
               keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 12),
             _SheetField(
               controller: addressController,
-              hint: 'Full address',
+              hint: 'Alamat lengkap',
               icon: Icons.location_on_rounded,
               maxLines: 3,
             ),
             const SizedBox(height: 12),
             _SheetField(
               controller: noteController,
-              hint: 'Additional notes (optional)',
+              hint: 'Catatan tambahan (opsional)',
               icon: Icons.sticky_note_2_outlined,
               maxLines: 2,
             ),
@@ -753,7 +753,7 @@ class _AddAddressSheet extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isEditing ? 'Update Address' : 'Save Address',
+                      isEditing ? 'Update Alamat' : 'Simpan Alamat',
                       style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w700,

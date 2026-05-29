@@ -309,7 +309,7 @@ class _InvoicePageState extends ConsumerState<InvoicePage> {
 
                   const Expanded(
                     child: Text(
-                      "Payment Invoice",
+                      "Pembayaran",
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 20,
@@ -328,7 +328,7 @@ class _InvoicePageState extends ConsumerState<InvoicePage> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text(
-                      "Pending",
+                      "Belum Dibayar",
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 11,
@@ -367,7 +367,7 @@ class _InvoicePageState extends ConsumerState<InvoicePage> {
                         const SizedBox(height: 14),
 
                         const Text(
-                          "Complete Payment Before",
+                          "Selesaikan pembayaran sebelum",
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 13,
@@ -454,7 +454,7 @@ class _InvoicePageState extends ConsumerState<InvoicePage> {
                         const SizedBox(height: 26),
 
                         const Text(
-                          "Virtual Account Number",
+                          "Nomor Virtual Account",
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
@@ -491,7 +491,7 @@ class _InvoicePageState extends ConsumerState<InvoicePage> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: const Text(
-                                  "Copy",
+                                  "Salin",
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 12,
@@ -507,7 +507,7 @@ class _InvoicePageState extends ConsumerState<InvoicePage> {
                         const SizedBox(height: 24),
 
                         _invoiceRow(
-                          "Total Payment",
+                          "Total Pembayaran",
                           "Rp ${formatRupiah(widget.order.total)}",
                           valueColor: ColorTheme.buttonPrimary,
                           isBig: true,

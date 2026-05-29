@@ -209,8 +209,8 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
                                   const SizedBox(height: 4),
                                   Text(
                                     _isCard
-                                        ? 'Enter your card details below'
-                                        : 'Enter your account details below',
+                                        ? 'Masukkan detail kartu anda di bawah ini'
+                                        : 'Masukkan detail akun e-wallet anda',
                                     style: TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 12.5,
@@ -242,7 +242,7 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'This is a simulation only. Do not enter real account data.',
+                                '.',
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 11.5,
@@ -259,7 +259,7 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
 
                       // ── MASTERCARD fields ────────────────────────────────
                       if (_isCard) ...[
-                        _FieldLabel(label: 'Card Number'),
+                        _FieldLabel(label: 'Nomor Kartu'),
                         const SizedBox(height: 8),
                         _InputField(
                           controller: _cardNumber,
@@ -273,9 +273,9 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
                           ],
                           validator: (v) {
                             final digits = v?.replaceAll(' ', '') ?? '';
-                            if (digits.isEmpty) return 'Card number is required';
+                            if (digits.isEmpty) return 'Nomor kartu wajib diisi';
                             if (digits.length < 16)
-                              return 'Enter a valid 16-digit card number';
+                              return 'Masukkan nomor kartu 16 digit yang valid';
                             return null;
                           },
                         ),
@@ -288,7 +288,7 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _FieldLabel(label: 'Expiry Date'),
+                                  _FieldLabel(label: 'Tanggal Kedaluwarsa'),
                                   const SizedBox(height: 8),
                                   _InputField(
                                     controller: _expiry,
@@ -302,9 +302,9 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
                                     ],
                                     validator: (v) {
                                       if (v == null || v.isEmpty)
-                                        return 'Required';
+                                        return 'Wajib diisi';
                                       if (v.length < 5)
-                                        return 'Enter MM/YY';
+                                        return 'Masukkan MM/YY';
                                       return null;
                                     },
                                   ),
@@ -341,9 +341,9 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
                                     ),
                                     validator: (v) {
                                       if (v == null || v.isEmpty)
-                                        return 'Required';
+                                        return 'Wajib diisi';
                                       if (v.length < 3)
-                                        return 'Enter 3-digit CVV';
+                                        return 'Masukkan CVV 3 digit';
                                       return null;
                                     },
                                   ),
@@ -356,7 +356,7 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
 
                       // ── E-WALLET fields ──────────────────────────────────
                       if (_isEwallet) ...[
-                        _FieldLabel(label: 'Phone Number / Account'),
+                        _FieldLabel(label: 'Nomor Telepon / Akun'),
                         const SizedBox(height: 8),
                         _InputField(
                           controller: _phone,
@@ -369,9 +369,9 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
                           ],
                           validator: (v) {
                             if (v == null || v.isEmpty)
-                              return 'Phone number is required';
+                              return 'Nomor telepon wajib diisi';
                             if (v.length < 10)
-                              return 'Enter a valid phone number';
+                              return 'Masukkan nomor telepon yang valid';
                             return null;
                           },
                         ),
@@ -403,8 +403,8 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
                           ),
                           validator: (v) {
                             if (v == null || v.isEmpty)
-                              return 'PIN is required';
-                            if (v.length < 4) return 'Enter at least 4 digits';
+                              return 'PIN wajib diisi';
+                            if (v.length < 4) return 'Masukkan setidaknya 4 digit';
                             return null;
                           },
                         ),
@@ -432,7 +432,7 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
                                   color: Colors.white, size: 20),
                               SizedBox(width: 10),
                               Text(
-                                'Save & Continue',
+                                'Simpan & Lanjutkan',
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontWeight: FontWeight.w700,

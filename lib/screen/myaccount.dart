@@ -251,7 +251,7 @@ class _MyAccountPageState
                     ),
                   )
                 : const Text(
-                    "Save Changes",
+                    "Simpan Perubahan",
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight:
@@ -309,7 +309,7 @@ class _MyAccountPageState
                   const SizedBox(width: 14),
 
                   const Text(
-                    "My Account",
+                    "Akun Saya",
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 20,
@@ -489,7 +489,7 @@ class _MyAccountPageState
                   // ACCOUNT MENU
                   // ======================
                   const Text(
-                    "Account Menu",
+                    "Menu akun",
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 15,
@@ -566,7 +566,7 @@ class _MyAccountPageState
                                       .start,
                               children: [
                                 Text(
-                                  "My Address",
+                                  "Alamat Saya",
                                   style:
                                       TextStyle(
                                     fontFamily:
@@ -583,7 +583,7 @@ class _MyAccountPageState
                                     height: 4),
 
                                 Text(
-                                  "Manage delivery address",
+                                  "Atur alamat kamu",
                                   style:
                                       TextStyle(
                                     fontFamily:
@@ -614,7 +614,7 @@ class _MyAccountPageState
                   // EDIT PROFILE
                   // ======================
                   const Text(
-                    "Edit Profile",
+                    "Edit Profil",
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 15,
@@ -640,7 +640,7 @@ class _MyAccountPageState
                   // PASSWORD
                   // ======================
                   const Text(
-                    "Change Password",
+                    "Ganti Password",
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 15,
@@ -654,9 +654,9 @@ class _MyAccountPageState
                   buildField(
                     controller:
                         oldPasswordController,
-                    label: "Old Password",
+                    label: "Password Lama",
                     hint:
-                        "Input old password",
+                        "Input password lama",
                     icon:
                         Icons.lock_outline,
                     isPassword: true,
@@ -667,9 +667,9 @@ class _MyAccountPageState
                   buildField(
                     controller:
                         newPasswordController,
-                    label: "New Password",
+                    label: "Password Baru",
                     hint:
-                        "Input new password",
+                        "Input password baru",
                     icon: Icons
                         .lock_reset_outlined,
                     isPassword: true,

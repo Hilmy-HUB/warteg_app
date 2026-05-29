@@ -182,7 +182,7 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                     ),
                     const SizedBox(width: 10),
                     const Text(
-                      "Add to Cart",
+                      "Tambah ke Keranjang",
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w600,
@@ -432,7 +432,7 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                           ),
                           const SizedBox(width: 12),
                           const Text(
-                            "Add Extras",
+                            "Pilih Tambahan",
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -466,25 +466,25 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
 
                       // ================= ADD ONS =================
                       buildAddOn(
-                        title: "White Crackers",
+                        title: "Kerupuk Putih",
                         price: 2000,
                         value: addOn1,
                         onChanged: (value) => setState(() => addOn1 = value!),
                       ),
                       buildAddOn(
-                        title: "Skin Crackers",
+                        title: "Kerupuk Kulit",
                         price: 2000,
                         value: addOn2,
                         onChanged: (value) => setState(() => addOn2 = value!),
                       ),
                       buildAddOn(
-                        title: "Extra Sambal",
+                        title: "Ekstra Sambal",
                         price: 3000,
                         value: addOn3,
                         onChanged: (value) => setState(() => addOn3 = value!),
                       ),
                       buildAddOn(
-                        title: "Extra Rice",
+                        title: "Ekstra Nasi",
                         price: 4000,
                         value: addOn4,
                         onChanged: (value) => setState(() => addOn4 = value!),
@@ -507,7 +507,7 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                           ),
                           const SizedBox(width: 12),
                           const Text(
-                            "Notes for Restaurant",
+                            "Catatan untuk Restoran",
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -527,7 +527,7 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                           fontSize: 14,
                         ),
                         decoration: InputDecoration(
-                          hintText: "e.g., Less spicy, separate the sauce...",
+                          hintText: "Misal: Jangan terlalu pedas, ya!",
                           hintStyle: const TextStyle(
                             color: Colors.black38,
                             fontFamily: 'Poppins',

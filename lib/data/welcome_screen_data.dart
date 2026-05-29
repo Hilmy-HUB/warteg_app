@@ -21,12 +21,12 @@ final List<BannerItem> daftarBanner = [
     gambar: "assets/images/welcome_screen/image1.jpg"
   ),
   BannerItem(
-    judul: "YOU CAN EAT GOOD ANYWHERE AND ANYTIME.",
-    deskripsi: "Are you tired of getting stuck in traffic jams to buy food? Let us take you to your place!",
+    judul: "BISA MAKAN ENAK DI MANA SAJA DAN KAPAN SAJA.",
+    deskripsi: "Apakah Anda lelah terjebak di kemacetan untuk membeli makanan? Biarkan kami membawa Anda ke tempat Anda!",
     gambar: "assets/images/welcome_screen/image2.png",
   ),
   BannerItem(
-    judul: "Enjoy your foods, Fellas!",
+    judul: "Nikmati makanan Anda, Teman-teman!",
     deskripsi: "",
     gambar: "assets/images/welcome_screen/image3.png",
   ),
