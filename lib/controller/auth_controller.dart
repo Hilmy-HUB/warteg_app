@@ -1,24 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:warteg_app/services/auth_service.dart';
-
-// ======================================
-// AUTH SERVICE
-// ======================================
 
 final authServiceProvider = Provider((ref) => AuthService());
 
-// ======================================
-// CURRENT USER
-// ======================================
-
 final currentUserProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
-
-// ======================================
-// AUTH CONTROLLER
-// ======================================
 
 final authControllerProvider =
     StateNotifierProvider<AuthController, AsyncValue<void>>(
@@ -35,21 +22,14 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   // REGISTER
   // ======================================
 
-  Future<String?> register(
-    String username,
-    String email,
-    String password,
-  ) async {
+  Future<String?> register(String username, String email, String password) async {
     state = const AsyncLoading();
-
     final result = await _service.register(
       username: username,
       email: email,
       password: password,
     );
-
     state = const AsyncData(null);
-
     return result;
   }
 
@@ -57,51 +37,60 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   // LOGIN
   // ======================================
 
+  // 🔐 Hardcode admin credentials
+  static const String _adminEmail    = 'admin@warteg.com';
+  static const String _adminPassword = 'admin123';
+
   Future<String?> login(String email, String password) async {
-    state = const AsyncLoading();
+    try {
+      state = const AsyncLoading();
 
-    final result = await _service.login(email: email, password: password);
+      String role;
+      String username;
 
-    // LOGIN BERHASIL
-    if (result == null) {
-      final user = _service.currentUser;
+      // ✅ Cek apakah admin
+      if (email == _adminEmail && password == _adminPassword) {
+        role     = 'admin';
+        username = 'Admin';
+      } else {
+        // ✅ Cek user biasa via AuthService
+        final result = await _service.login(email: email, password: password);
+        if (result != null) return result; // return pesan error
 
-      // SIMPAN KE PROVIDER
+        role     = 'user';
+        username = email.split('@')[0]; // ambil nama dari email
+      }
+
+      // Simpan ke SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLogin',   true);
+      await prefs.setString('email',    email);
+      await prefs.setString('username', username);
+      await prefs.setString('role',     role);
+
+      // Update provider
       ref.read(currentUserProvider.notifier).state = {
-        "username": user?["username"],
-        "email": user?["email"],
+        'username': username,
+        'email':    email,
+        'role':     role,
       };
 
-      // =========================
-      // SIMPAN KE SHAREDPREFERENCES
-      // =========================
+      return null; // sukses
 
-      final prefs = await SharedPreferences.getInstance();
-
-      await prefs.setBool("isLogin", true);
-
-      await prefs.setString("username", user?["username"] ?? "Guest");
-
-      await prefs.setString("email", user?["email"] ?? "");
+    } catch (e) {
+      return e.toString();
+    } finally {
+      state = const AsyncData(null);
     }
-
-    state = const AsyncData(null);
-
-    return result;
   }
 
   // ======================================
   // LOGOUT
   // ======================================
 
-   Future<void> logout() async {
+  Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-
-    await prefs.remove('isLoggedIn');
-    await prefs.remove('user');
-    await prefs.remove('token');
-
-    // atau kalau mau bersih total:
-    // await prefs.clear();
+    await prefs.clear();
+    ref.read(currentUserProvider.notifier).state = null;
   }
 }

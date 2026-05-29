@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:warteg_app/admin/admin_dasboard_page.dart';
 import 'package:warteg_app/config/supabase_config.dart';
 import 'package:warteg_app/controller/auth_controller.dart';
 import 'package:warteg_app/screen/home.dart';
@@ -15,37 +16,33 @@ void main() async {
     anonKey: SupabaseConfig.anonKey,
   );
 
-  // =========================
-  // CHECK LOGIN
-  // =========================
-
   final prefs = await SharedPreferences.getInstance();
-
   final bool isLogin = prefs.getBool("isLogin") ?? false;
-
   final String username = prefs.getString("username") ?? "Guest";
-
   final String email = prefs.getString("email") ?? "";
+  final String role = prefs.getString("role") ?? "user"; // ← tambah ini
 
   final container = ProviderContainer();
 
   container.read(currentUserProvider.notifier).state = {
     "username": username,
     "email": email,
+    "role": role, // ← tambah ini
   };
 
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: MyApp(isLogin: isLogin),
+      child: MyApp(isLogin: isLogin, role: role), // ← tambah role
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
   final bool isLogin;
+  final String role;
 
-  const MyApp({super.key, required this.isLogin});
+  const MyApp({super.key, required this.isLogin, required this.role});
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +55,9 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Poppins',
       ),
 
-      home: isLogin ? Home() : WelcomePage(),
+      home: isLogin
+          ? (role == 'admin' ? AdminDashboardPage() : Home())
+          : WelcomePage(),
     );
   }
 }

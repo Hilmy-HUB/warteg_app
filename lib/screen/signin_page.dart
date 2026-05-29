@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:warteg_app/admin/admin_dasboard_page.dart';
 import 'package:warteg_app/controller/auth_controller.dart';
 import 'package:warteg_app/screen/home.dart';
 import 'package:warteg_app/theme/color_theme.dart';
@@ -68,9 +70,16 @@ class _SigninPageState extends ConsumerState<SigninPage> {
         SnackBar(content: Text(result), backgroundColor: Colors.red),
       );
     } else {
+      final prefs = await SharedPreferences.getInstance();
+      final String role = prefs.getString('role') ?? 'user';
+
+      if (!mounted) return;
+
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => Home()),
+        MaterialPageRoute(
+          builder: (_) => role == 'admin' ? AdminDashboardPage() : Home(),
+        ),
         (_) => false,
       );
     }
@@ -126,7 +135,6 @@ class _SigninPageState extends ConsumerState<SigninPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-
                   // --- FORM CARD ---
                   Container(
                     width: double.infinity,
