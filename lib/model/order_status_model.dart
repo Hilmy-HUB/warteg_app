@@ -4,4 +4,5 @@ enum OrderStatusModel {
   dijemput,
   diantar,
   selesai,
+  dibatalkan,
 }

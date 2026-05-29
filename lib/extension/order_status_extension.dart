@@ -5,14 +5,21 @@ extension OrderStatusX on OrderStatusModel {
     switch (this) {
       case OrderStatusModel.bayar:
         return "Bayar";
+
       case OrderStatusModel.diproses:
         return "Diproses";
+
       case OrderStatusModel.dijemput:
         return "Dijemput";
+
       case OrderStatusModel.diantar:
         return "Diantar";
+
       case OrderStatusModel.selesai:
         return "Selesai";
+
+      case OrderStatusModel.dibatalkan:
+        return "Dibatalkan";
     }
   }
 }

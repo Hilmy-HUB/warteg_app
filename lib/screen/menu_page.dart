@@ -146,6 +146,7 @@ class _MenuPageState extends State<MenuPage> {
                         ),
                       )
                     : GridView.builder(
+                        padding: const EdgeInsets.only(bottom : 70),
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:

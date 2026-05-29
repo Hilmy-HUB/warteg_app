@@ -5,9 +5,9 @@ import 'package:warteg_app/screen/landing_page.dart';
 import 'package:warteg_app/screen/myaccount.dart';
 import 'package:warteg_app/screen/payment_page.dart';
 import 'package:warteg_app/screen/promo_page.dart';
-// import 'package:warteg_app/screen/signin_page.dart';
-// import 'package:warteg_app/screen/welcome_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
+import 'package:warteg_app/provider/notification_provider.dart';
+import 'package:warteg_app/screen/notification_page.dart';
 
 class ProfilPage extends ConsumerWidget {
   const ProfilPage({Key? key}) : super(key: key);
@@ -38,7 +38,7 @@ class ProfilPage extends ConsumerWidget {
                 child: Column(
                   children: [
                     // TITLE
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
@@ -51,10 +51,41 @@ class ProfilPage extends ConsumerWidget {
                           ),
                         ),
 
-                        Icon(
-                          Icons.notifications_none_rounded,
-                          color: Colors.white,
-                          size: 28,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationPage(),
+                              ),
+                            );
+                          },
+
+                          child: Stack(
+                            children: [
+                              const Icon(
+                                Icons.notifications_none_rounded,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+
+                              if (ref
+                                  .watch(notificationProvider)
+                                  .any((e) => e.isRead == false))
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -75,22 +106,22 @@ class ProfilPage extends ConsumerWidget {
                         children: [
                           // PHOTO
                           Container(
-                          width: 78,
-                          height: 78,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 2,
+                            width: 78,
+                            height: 78,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 2,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: 42,
                             ),
                           ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 42,
-                          ),
-                        ),
 
                           const SizedBox(width: 18),
 

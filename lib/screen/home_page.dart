@@ -8,8 +8,10 @@ import 'package:warteg_app/provider/cart_provider.dart';
 import 'package:warteg_app/screen/address_page.dart';
 import 'package:warteg_app/screen/cart_page.dart';
 import 'package:warteg_app/screen/detail_product_page.dart';
+import 'package:warteg_app/screen/notification_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 import 'package:warteg_app/widgets/menu_card.dart';
+import 'package:warteg_app/provider/notification_provider.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   final VoidCallback? onSearchTapped;
@@ -34,6 +36,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final cartItems = ref.watch(cartProvider);
     final addresses = ref.watch(addressProvider);
+    final hasUnreadNotif = ref.watch(notificationProvider)
+    .any((e) => e.isRead == false);
 
     final int totalCart = cartItems.fold(0, (sum, item) => sum + item.quantity);
     final selectedAddress = addresses.where((a) => a.isSelected).firstOrNull;
@@ -430,69 +434,130 @@ class _HomePageState extends ConsumerState<HomePage> {
                     // ================= RIGHT: CART =================
                     Align(
                       alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const CartPage()),
-                        ),
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              margin: const EdgeInsets.only(right: 5),
-                              width: _barHeight - 10,
-                              height: _barHeight - 10,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.07),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.shopping_cart_outlined,
-                                color: ColorTheme.buttonPrimary,
-                                size: 20,
-                              ),
-                            ),
-
-                            if (totalCart > 0)
-                              Positioned(
-                                top: -3,
-                                right: -3,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 16,
-                                    minHeight: 16,
-                                  ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // ================= NOTIFICATION =================
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const NotificationPage(),
+                                ),
+                              );
+                            },
+                            child: Stack(
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(right: 10),
+                                  width: _barHeight - 10,
+                                  height: _barHeight - 10,
                                   decoration: BoxDecoration(
-                                    color: Colors.redAccent,
-                                    borderRadius: BorderRadius.circular(100),
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 2,
-                                    ),
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.07),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
-                                  child: Text(
-                                    totalCart > 99
-                                        ? "99+"
-                                        : totalCart.toString(),
-                                    style: const TextStyle(
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                    textAlign: TextAlign.center,
+                                  child: const Icon(
+                                    Icons.notifications_none_rounded,
+                                    color: ColorTheme.buttonPrimary,
+                                    size: 20,
                                   ),
                                 ),
+
+                                if (hasUnreadNotif)
+                                  Positioned(
+                                    top: 1,
+                                    right: 13,
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+
+                          // ================= CART =================
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const CartPage(),
                               ),
-                          ],
-                        ),
+                            ),
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(right: 5),
+                                  width: _barHeight - 10,
+                                  height: _barHeight - 10,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.07),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.shopping_cart_outlined,
+                                    color: ColorTheme.buttonPrimary,
+                                    size: 20,
+                                  ),
+                                ),
+
+                                if (totalCart > 0)
+                                  Positioned(
+                                    top: -3,
+                                    right: -3,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 16,
+                                        minHeight: 16,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent,
+                                        borderRadius: BorderRadius.circular(
+                                          100,
+                                        ),
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        totalCart > 99
+                                            ? "99+"
+                                            : totalCart.toString(),
+                                        style: const TextStyle(
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

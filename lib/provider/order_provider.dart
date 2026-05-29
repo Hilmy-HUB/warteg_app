@@ -12,10 +12,7 @@ class OrderNotifier extends StateNotifier<List<OrderModel>> {
   void updateOrderStatus(String orderId, OrderStatusModel newStatus) {
     state = [
       for (final order in state)
-        if (order.id == orderId)
-          order.copyWith(status: newStatus)
-        else
-          order,
+        if (order.id == orderId) order.copyWith(status: newStatus) else order,
     ];
   }
 
@@ -25,7 +22,6 @@ class OrderNotifier extends StateNotifier<List<OrderModel>> {
   }
 }
 
-final orderProvider =
-    StateNotifierProvider<OrderNotifier, List<OrderModel>>(
+final orderProvider = StateNotifierProvider<OrderNotifier, List<OrderModel>>(
   (ref) => OrderNotifier(),
 );

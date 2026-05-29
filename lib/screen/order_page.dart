@@ -1,14 +1,18 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warteg_app/extension/order_status_extension.dart';
 import 'package:warteg_app/model/order_model.dart';
 import 'package:warteg_app/model/order_status_model.dart';
+import 'package:warteg_app/provider/notification_provider.dart';
 import 'package:warteg_app/provider/order_provider.dart';
+import 'package:warteg_app/provider/order_tab_provider.dart';
 import 'package:warteg_app/screen/invoice_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 
 class OrderPage extends ConsumerStatefulWidget {
-  const OrderPage({super.key});
+  final OrderStatusModel? initialTab;
+  const OrderPage({super.key, this.initialTab});
 
   @override
   ConsumerState<OrderPage> createState() => _OrderPageState();
@@ -18,13 +22,41 @@ class _OrderPageState extends ConsumerState<OrderPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  Timer? timer;
+
   final List<OrderStatusModel> tabs = OrderStatusModel.values;
 
   @override
   void initState() {
     super.initState();
 
-    _tabController = TabController(length: tabs.length, vsync: this);
+    final selectedTab = ref.read(orderTabProvider);
+    final initialIndex = tabs.indexOf(selectedTab);
+
+    _tabController = TabController(
+      length: tabs.length,
+      vsync: this,
+      initialIndex: initialIndex,
+    );
+
+    // ✅ INI KUNCI FIX
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+
+      final newStatus = tabs[_tabController.index];
+      ref.read(orderTabProvider.notifier).state = newStatus;
+    });
+
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    _tabController.dispose();
+    super.dispose();
   }
 
   List<OrderModel> getOrdersByStatus(
@@ -37,22 +69,22 @@ class _OrderPageState extends ConsumerState<OrderPage>
   Color getStatusColor(OrderStatusModel status) {
     switch (status) {
       case OrderStatusModel.bayar:
-        return Colors.red;
-
-      case OrderStatusModel.diproses:
         return Colors.orange;
 
-      case OrderStatusModel.dijemput:
+      case OrderStatusModel.diproses:
         return Colors.blue;
 
-      case OrderStatusModel.diantar:
+      case OrderStatusModel.dijemput:
         return Colors.purple;
+
+      case OrderStatusModel.diantar:
+        return Colors.indigo;
 
       case OrderStatusModel.selesai:
         return Colors.green;
 
-      default:
-        return Colors.grey;
+      case OrderStatusModel.dibatalkan:
+        return Colors.red;
     }
   }
 
@@ -71,6 +103,36 @@ class _OrderPageState extends ConsumerState<OrderPage>
     }
 
     return buf.toString();
+  }
+
+  bool canCancelOrder(OrderModel order) {
+    const cancellableMethods = {"COD", "DANA", "GoPay", "OVO", "Mastercard"};
+
+    final isCancellableMethod = cancellableMethods.contains(
+      order.paymentMethod.name,
+    );
+
+    if (!isCancellableMethod) return false;
+
+    if (order.status != OrderStatusModel.diproses) return false;
+
+    if (order.cancelExpiredAt == null) return false;
+
+    return DateTime.now().isBefore(order.cancelExpiredAt!);
+  }
+
+  String getRemainingCancelTime(OrderModel order) {
+    if (order.cancelExpiredAt == null) return "00:00";
+
+    final diff = order.cancelExpiredAt!.difference(DateTime.now());
+
+    if (diff.isNegative) return "00:00";
+
+    final minutes = diff.inMinutes.toString().padLeft(2, '0');
+
+    final seconds = (diff.inSeconds % 60).toString().padLeft(2, '0');
+
+    return "$minutes:$seconds";
   }
 
   Widget buildOrderCard(OrderModel order) {
@@ -364,6 +426,9 @@ class _OrderPageState extends ConsumerState<OrderPage>
               ),
             ),
 
+            // =========================
+            // VA PAYMENT
+            // =========================
             if (order.status == OrderStatusModel.bayar) ...[
               const SizedBox(height: 18),
 
@@ -404,6 +469,15 @@ class _OrderPageState extends ConsumerState<OrderPage>
                         .read(orderProvider.notifier)
                         .updateOrderStatus(order.id, OrderStatusModel.diproses);
 
+                    ref
+                        .read(notificationProvider.notifier)
+                        .addNotification(
+                          title: 'Pembayaran Berhasil',
+                          message:
+                              'Pesanan #${order.id.substring(8)} sedang diproses',
+                          orderId: order.id,
+                        );
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Pembayaran berhasil')),
                     );
@@ -417,6 +491,260 @@ class _OrderPageState extends ConsumerState<OrderPage>
                   ),
                   child: const Text(
                     'Bayar Sekarang',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
+            // =========================
+            // COD CANCEL
+            // =========================
+            if (canCancelOrder(order)) ...[
+              const SizedBox(height: 18),
+
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.timer_outlined, color: Colors.orange),
+
+                    const SizedBox(width: 10),
+
+                    Expanded(
+                      child: Text(
+                        'Batalkan pesanan dalam ${getRemainingCancelTime(order)}',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final firstConfirm = await showDialog<bool>(
+                      context: context,
+                      builder: (_) {
+                        return AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          title: const Text(
+                            'Batalkan Pesanan?',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          content: const Text(
+                            'Apakah kamu yakin ingin membatalkan pesanan ini?',
+                            style: TextStyle(fontFamily: 'Poppins'),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context, false);
+                              },
+                              child: const Text(
+                                'Tidak',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context, true);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                              ),
+                              child: const Text(
+                                'Ya',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (firstConfirm != true) return;
+
+                    final secondConfirm = await showDialog<bool>(
+                      context: context,
+                      builder: (_) {
+                        return AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          title: const Text(
+                            'Konfirmasi Terakhir',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          content: const Text(
+                            'Pesanan yang dibatalkan tidak dapat dikembalikan.',
+                            style: TextStyle(fontFamily: 'Poppins'),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context, false);
+                              },
+                              child: const Text(
+                                'Kembali',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context, true);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                              ),
+                              child: const Text(
+                                'Batalkan',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (secondConfirm != true) return;
+
+                    ref
+                        .read(orderProvider.notifier)
+                        .updateOrderStatus(
+                          order.id,
+                          OrderStatusModel.dibatalkan,
+                        );
+
+                    ref
+                        .read(notificationProvider.notifier)
+                        .addNotification(
+                          title: 'Pesanan Dibatalkan',
+                          message:
+                              'Pesanan #${order.id.substring(8)} berhasil dibatalkan',
+                          orderId: order.id,
+                        );
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Pesanan berhasil dibatalkan'),
+                      ),
+                    );
+
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) {
+                        Future.delayed(const Duration(milliseconds: 1400), () {
+                          if (mounted) {
+                            Navigator.pop(context);
+                          }
+                        });
+
+                        return Center(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: Container(
+                              width: 260,
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 72,
+                                    height: 72,
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close_rounded,
+                                      color: Colors.red,
+                                      size: 42,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 18),
+
+                                  const Text(
+                                    'Pesanan Dibatalkan',
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 8),
+
+                                  Text(
+                                    'Pesanan berhasil dibatalkan',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 13,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: const Text(
+                    'Batalkan Pesanan',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.bold,
@@ -490,7 +818,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 70),
       itemCount: orders.length,
       itemBuilder: (_, index) {
         return buildOrderCard(orders[index]);
@@ -576,6 +904,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
           buildTabContent(OrderStatusModel.dijemput),
           buildTabContent(OrderStatusModel.diantar),
           buildTabContent(OrderStatusModel.selesai),
+          buildTabContent(OrderStatusModel.dibatalkan),
         ],
       ),
     );

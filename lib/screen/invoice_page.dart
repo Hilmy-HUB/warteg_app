@@ -2,21 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warteg_app/model/order_model.dart';
+import 'package:warteg_app/model/order_status_model.dart';
+import 'package:warteg_app/provider/order_provider.dart';
 import 'package:warteg_app/theme/color_theme.dart';
+import 'package:warteg_app/provider/notification_provider.dart';
 
-class InvoicePage extends StatefulWidget {
+class InvoicePage extends ConsumerStatefulWidget {
   final OrderModel order;
   final String? vaNumber;
 
   const InvoicePage({super.key, required this.order, this.vaNumber});
 
   @override
-  State<InvoicePage> createState() => _InvoicePageState();
-  
+  ConsumerState<InvoicePage> createState() => _InvoicePageState();
 }
 
-class _InvoicePageState extends State<InvoicePage> {
+class _InvoicePageState extends ConsumerState<InvoicePage> {
   late Duration remainingTime;
 
   Timer? timer;
@@ -24,18 +27,23 @@ class _InvoicePageState extends State<InvoicePage> {
   bool mobileExpanded = true;
   bool atmExpanded = false;
   bool internetExpanded = false;
-  
 
   @override
   void initState() {
     super.initState();
-    
+
     remainingTime = widget.order.expiredAt.difference(DateTime.now());
+
     startTimer();
   }
 
   void startTimer() {
     timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (widget.order.status == OrderStatusModel.dibatalkan) {
+        timer?.cancel();
+        return;
+      }
+
       final diff = widget.order.expiredAt.difference(DateTime.now());
 
       if (diff.isNegative) {
@@ -43,7 +51,7 @@ class _InvoicePageState extends State<InvoicePage> {
       }
 
       setState(() {
-        remainingTime = diff;
+        remainingTime = diff.isNegative ? Duration.zero : diff;
       });
     });
   }
@@ -55,6 +63,10 @@ class _InvoicePageState extends State<InvoicePage> {
   }
 
   String formatDuration(Duration duration) {
+    if (duration.isNegative) {
+      return "00:00:00";
+    }
+
     final hours = duration.inHours.toString().padLeft(2, '0');
 
     final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
@@ -97,12 +109,91 @@ class _InvoicePageState extends State<InvoicePage> {
     );
   }
 
+  void cancelOrder() {
+  ref
+      .read(orderProvider.notifier)
+      .updateOrderStatus(widget.order.id, OrderStatusModel.dibatalkan);
+
+  ref
+      .read(notificationProvider.notifier)
+      .addNotification(
+        title: 'Pesanan Dibatalkan',
+        message:
+            'Pesanan #${widget.order.id.substring(8)} berhasil dibatalkan',
+        orderId: widget.order.id,
+      );
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text(
+        "Pesanan berhasil dibatalkan",
+        style: TextStyle(fontFamily: 'Poppins'),
+      ),
+    ),
+  );
+
+  Navigator.pop(context);
+}
+
+  void showCancelDialog() {
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: const Text(
+            "Batalkan Pesanan?",
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: const Text(
+            "Pesanan yang belum dibayar akan dihapus dari daftar pesanan.",
+            style: TextStyle(fontFamily: 'Poppins'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text(
+                "Tidak",
+                style: TextStyle(fontFamily: 'Poppins'),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+
+                cancelOrder();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text(
+                "Ya, Batalkan",
+                style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final paymentName = widget.order.paymentMethod.name;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7F4),
+
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 22),
         decoration: BoxDecoration(
@@ -117,38 +208,70 @@ class _InvoicePageState extends State<InvoicePage> {
         ),
         child: SafeArea(
           top: false,
-          child: SizedBox(
-            height: 58,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ColorTheme.buttonPrimary,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
-                ),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.home_rounded, color: Colors.white),
-
-                  SizedBox(width: 10),
-
-                  Text(
-                    "Kembali ke Beranda",
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.order.status == OrderStatusModel.bayar) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: OutlinedButton(
+                    onPressed: showCancelDialog,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    child: const Text(
+                      "Batalkan Pesanan",
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
                     ),
                   ),
-                ],
+                ),
+
+                const SizedBox(height: 12),
+              ],
+
+              SizedBox(
+                width: double.infinity,
+                height: 58,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ColorTheme.buttonPrimary,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.home_rounded, color: Colors.white),
+
+                      SizedBox(width: 10),
+
+                      Text(
+                        "Kembali ke Beranda",
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -356,7 +479,7 @@ class _InvoicePageState extends State<InvoicePage> {
 
                             GestureDetector(
                               onTap: () {
-                                copyText(paymentName);
+                                copyText(widget.vaNumber ?? "-");
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(

@@ -6,6 +6,7 @@ import 'package:warteg_app/model/order_model.dart';
 import 'package:warteg_app/provider/address_provider.dart';
 import 'package:warteg_app/provider/checkout_provider.dart';
 import 'package:warteg_app/provider/order_provider.dart';
+import 'package:warteg_app/provider/payment_detail_provider.dart';
 import 'package:warteg_app/screen/address_page.dart';
 import 'package:warteg_app/screen/home.dart';
 import 'package:warteg_app/screen/invoice_page.dart';
@@ -13,6 +14,7 @@ import 'package:warteg_app/screen/payment_page.dart';
 import 'package:warteg_app/screen/promo_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 import 'package:warteg_app/provider/cart_provider.dart';
+import 'package:warteg_app/provider/notification_provider.dart';
 
 class OrderDetailPage extends ConsumerStatefulWidget {
   final List<CartItemModel> items;
@@ -57,9 +59,46 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     return buf.toString();
   }
 
-  Future<void> _placeOrder(dynamic checkout) async {
-    final vaNumber = "8808${DateTime.now().millisecondsSinceEpoch}";
+  Future<bool> _showPinDialog() async {
+    final controller = TextEditingController();
 
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text("Security PIN"),
+          content: TextField(
+            controller: controller,
+            obscureText: true,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(hintText: "Masukkan PIN"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final savedPin = "123456"; // 🔥 nanti ambil dari user profile
+                if (controller.text == savedPin) {
+                  Navigator.pop(context, true);
+                } else {
+                  Navigator.pop(context, false);
+                }
+              },
+              child: const Text("Confirm"),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  Future<void> _placeOrder(dynamic checkout) async {
     if (checkout.selectedAddress == null) {
       _showSnack('Please select a delivery address first', isError: true);
       return;
@@ -70,27 +109,39 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       return;
     }
 
+    final paymentName = checkout.paymentMethod!.name as String;
+
+    // Only digital payments require saved account details
+    const digitalMethods = {"Mastercard", "DANA", "GoPay", "OVO"};
+
+    if (digitalMethods.contains(paymentName)) {
+      final paymentDetail = ref
+          .read(paymentDetailProvider.notifier)
+          .getByMethod(paymentName);
+
+      if (paymentDetail == null) {
+        _showSnack(
+          'Please enter your $paymentName account details first',
+          isError: true,
+        );
+        return;
+      }
+    }
+
+    final vaNumber = "8808${DateTime.now().millisecondsSinceEpoch}";
+
     setState(() => _isLoading = true);
-
     await Future.delayed(const Duration(milliseconds: 400));
-
-    final paymentName = checkout.paymentMethod!.name;
-
-    // =========================
-    // CEK BANK VA
-    // =========================
-
     final isBankVA =
         paymentName == "BCA" ||
         paymentName == "BNI" ||
         paymentName == "Mandiri";
 
-    // =========================
-    // CREATE ORDER
-    // =========================
+    final isCOD = paymentName == "COD";
+
+    final isDigital = digitalMethods.contains(paymentName);
 
     final order = OrderModel(
-      expiredAt: DateTime.now().add(const Duration(hours: 24)),
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       items: checkout.items,
       address: checkout.selectedAddress!,
@@ -100,88 +151,76 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       discount: checkout.promoDiscount,
       total: checkout.total,
       createdAt: DateTime.now(),
-
-      status: isBankVA ? OrderStatusModel.bayar : OrderStatusModel.diproses,
-      vaNumber: isBankVA ? "8808${DateTime.now().millisecondsSinceEpoch}" : "",
+      status: (isCOD || isDigital)
+          ? OrderStatusModel.diproses
+          : OrderStatusModel.bayar,
+      vaNumber: (isCOD || isDigital) ? null : vaNumber,
+      expiredAt: DateTime.now().add(const Duration(hours: 24)),
+      cancelExpiredAt: isCOD || isDigital
+          ? DateTime.now().add(const Duration(minutes: 2))
+          : null,
     );
-
-    // =========================
-    // SAVE ORDER
-    // =========================
 
     ref.read(orderProvider.notifier).addOrder(order);
 
-    // =========================
-    // BANK VA
-    // =========================
+    ref
+        .read(notificationProvider.notifier)
+        .addNotification(
+          title: 'Pesanan Baru',
+          message: 'Pesanan #${order.id.substring(8)} berhasil dibuat',
+          orderId: order.id,
+        );
+
+    ref
+        .read(notificationProvider.notifier)
+        .addNotification(
+          title: 'Pesanan Dibuat',
+          message:
+              'Pesanan berhasil dibuat dengan total Rp ${_formatRupiah(order.total)}',
+        );
 
     if (isBankVA) {
-      final cartNotifier = ref.read(cartProvider.notifier);
-
-      cartNotifier.clearCart();
+      ref.read(cartProvider.notifier).clearCart();
       ref.read(checkoutProvider.notifier).clearCheckout();
-
       setState(() => _isLoading = false);
-
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => InvoicePage(order: order, vaNumber: vaNumber),
         ),
       );
-
       return;
     }
 
-    // =========================
-    // AUTO STATUS
-    // =========================
-
+    // Auto status progression for non-bank orders
     Future.delayed(const Duration(seconds: 5), () {
       ref
           .read(orderProvider.notifier)
           .updateOrderStatus(order.id, OrderStatusModel.diproses);
     });
-
     Future.delayed(const Duration(seconds: 10), () {
       ref
           .read(orderProvider.notifier)
           .updateOrderStatus(order.id, OrderStatusModel.dijemput);
     });
-
     Future.delayed(const Duration(seconds: 15), () {
       ref
           .read(orderProvider.notifier)
           .updateOrderStatus(order.id, OrderStatusModel.diantar);
     });
-
     Future.delayed(const Duration(seconds: 20), () {
       ref
           .read(orderProvider.notifier)
           .updateOrderStatus(order.id, OrderStatusModel.selesai);
     });
-    // =========================
-    // REMOVE CART
-    // =========================
 
-    // REMOVE CART
-    final cartNotifier = ref.read(cartProvider.notifier);
-
-    cartNotifier.clearCart();
-
-    // =========================
-    // CLEAR CHECKOUT
-    // =========================
-
+    ref.read(cartProvider.notifier).clearCart();
     ref.read(checkoutProvider.notifier).clearCheckout();
-
     setState(() => _isLoading = false);
 
     if (mounted) {
       _showSnack('Order placed successfully!');
-
       await Future.delayed(const Duration(milliseconds: 600));
-
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => Home()),
@@ -533,6 +572,7 @@ class _PaymentChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    x,
   });
 
   @override
