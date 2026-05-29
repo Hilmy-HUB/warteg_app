@@ -58,16 +58,10 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/images/landing_page/background.png
-    - assets/images/welcome_screen/image1.jpg
-    - assets/images/welcome_screen/image2.png
-    - assets/images/welcome_screen/image3.png
-    - assets/images/homepage/logo.png
-    - assets/images/homepage/paket1.png
-    - assets/images/homepage/paket2.png
-    - assets/images/homepage/paket3.png
-    - assets/images/homepage/paket4.png
-    - assets/images/product/ayamkalio.png
+    - assets/images/homepage/
+    - assets/images/landing_page/
+    - assets/images/product/
+    - assets/images/welcome_screen/
     # - assets/images/product/orektempe.png
     # - assets/images/product/orektempe.png
     # - assets/images/product/orektempe.png
