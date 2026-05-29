@@ -92,17 +92,6 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
     Navigator.pop(context);
   }
 
-  // ── Format card number with spaces ────────────────────────────────────────
-  String _formatCardDisplay(String value) {
-    final digits = value.replaceAll(' ', '');
-    final buffer = StringBuffer();
-    for (int i = 0; i < digits.length; i++) {
-      if (i > 0 && i % 4 == 0) buffer.write(' ');
-      buffer.write(digits[i]);
-    }
-    return buffer.toString();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

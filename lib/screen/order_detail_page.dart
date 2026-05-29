@@ -59,45 +59,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     return buf.toString();
   }
 
-  Future<bool> _showPinDialog() async {
-    final controller = TextEditingController();
-
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) {
-        return AlertDialog(
-          title: const Text("Security PIN"),
-          content: TextField(
-            controller: controller,
-            obscureText: true,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(hintText: "Masukkan PIN"),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final savedPin = "123456"; // 🔥 nanti ambil dari user profile
-                if (controller.text == savedPin) {
-                  Navigator.pop(context, true);
-                } else {
-                  Navigator.pop(context, false);
-                }
-              },
-              child: const Text("Confirm"),
-            ),
-          ],
-        );
-      },
-    );
-
-    return result ?? false;
-  }
-
   Future<void> _placeOrder(dynamic checkout) async {
     if (checkout.selectedAddress == null) {
       _showSnack('Please select a delivery address first', isError: true);
@@ -554,70 +515,6 @@ class _SectionCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             trailing,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Payment Chip ─────────────────────────────────────────────────────────────
-
-class _PaymentChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _PaymentChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    x,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(right: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        decoration: BoxDecoration(
-          color: selected ? ColorTheme.buttonPrimary : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? ColorTheme.buttonPrimary : Colors.grey.shade200,
-            width: 1.5,
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: ColorTheme.buttonPrimary.withOpacity(0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.payment_rounded,
-              size: 16,
-              color: selected ? Colors.white : Colors.grey.shade400,
-            ),
-            const SizedBox(width: 7),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-                color: selected ? Colors.white : Colors.grey.shade700,
-              ),
-            ),
           ],
         ),
       ),
