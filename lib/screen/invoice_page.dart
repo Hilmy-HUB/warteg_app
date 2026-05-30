@@ -254,7 +254,8 @@ class _InvoicePageState extends ConsumerState<InvoicePage> {
                     onTap: () {
                       ref.read(orderTabProvider.notifier).state =
                           OrderStatusModel.bayar;
-                      ref.read(navbarIndexProvider.notifier).state = 2;
+                      ref.read(navbarIndexProvider.notifier).state =
+                          widget.order.deliveryType == 'pickup' ? 3 : 2;
                       Navigator.popUntil(context, (route) => route.isFirst);
                     },
                     child: Container(

@@ -9,17 +9,22 @@ class CheckoutState {
   final AddressModel? selectedAddress;
   final PromoModel? selectedPromo;
   final PaymentMethodModel? paymentMethod;
+  final String deliveryType; // 'delivery' atau 'pickup'
 
   CheckoutState({
     this.items = const [],
     this.selectedAddress,
     this.selectedPromo,
     this.paymentMethod,
+    this.deliveryType = 'delivery',
   });
 
   int get subtotal => items.fold(0, (sum, item) => sum + item.totalHarga);
 
-  int get ongkir => selectedPromo?.freeShipping == true ? 0 : 10000;
+  int get ongkir {
+    if (deliveryType == 'pickup') return 0;
+    return selectedPromo?.freeShipping == true ? 0 : 10000;
+  }
 
   int get promoDiscount {
     if (selectedPromo == null) return 0;
@@ -33,12 +38,16 @@ class CheckoutState {
     AddressModel? selectedAddress,
     PromoModel? selectedPromo,
     PaymentMethodModel? paymentMethod,
+    String? deliveryType,
+    bool clearAddress = false,
+    bool clearPromo = false,
   }) {
     return CheckoutState(
       items: items ?? this.items,
-      selectedAddress: selectedAddress ?? this.selectedAddress,
-      selectedPromo: selectedPromo ?? this.selectedPromo,
+      selectedAddress: clearAddress ? null : (selectedAddress ?? this.selectedAddress),
+      selectedPromo: clearPromo ? null : (selectedPromo ?? this.selectedPromo),
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      deliveryType: deliveryType ?? this.deliveryType,
     );
   }
 }
@@ -47,7 +56,10 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
   CheckoutNotifier() : super(CheckoutState());
 
   void setDefaultAddress(AddressModel address) {
-    state = state.copyWith(selectedAddress: address);
+    // Hanya set kalau mode delivery
+    if (state.deliveryType == 'delivery') {
+      state = state.copyWith(selectedAddress: address);
+    }
   }
 
   void setItems(List<CartItemModel> items) {
@@ -62,18 +74,25 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
     state = state.copyWith(selectedPromo: promo);
   }
 
-  // tambahkan method ini di dalam CheckoutNotifier
   void clearPromo() {
     state = CheckoutState(
       items: state.items,
       selectedAddress: state.selectedAddress,
       paymentMethod: state.paymentMethod,
-      // selectedPromo dikosongkan
+      deliveryType: state.deliveryType,
     );
   }
 
   void selectPayment(PaymentMethodModel method) {
     state = state.copyWith(paymentMethod: method);
+  }
+
+  void setDeliveryType(String type) {
+    // Kalau ganti ke pickup, clear alamat yang dipilih
+    state = state.copyWith(
+      deliveryType: type,
+      clearAddress: type == 'pickup',
+    );
   }
 
   void clearCheckout() {

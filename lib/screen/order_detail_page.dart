@@ -1,10 +1,3 @@
-// lib/screen/order_detail_page.dart
-//
-// Perubahan:
-//   • COD & Digital → status awal: tungguKonfirmasi (bukan diproses)
-//   • VA: tetap bayar → setelah bayar manual masuk tungguKonfirmasi
-//   • cancelExpiredAt hanya untuk COD (digital tidak perlu timer cancel karena langsung konfirmasi)
-
 import 'package:flutter/material.dart';
 import 'package:warteg_app/model/order_status_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +5,9 @@ import 'package:warteg_app/model/cart_item_model.dart';
 import 'package:warteg_app/model/order_model.dart';
 import 'package:warteg_app/provider/address_provider.dart';
 import 'package:warteg_app/provider/checkout_provider.dart';
+import 'package:warteg_app/provider/navbar_provider.dart';
 import 'package:warteg_app/provider/order_provider.dart';
+import 'package:warteg_app/provider/order_tab_provider.dart';
 import 'package:warteg_app/provider/payment_detail_provider.dart';
 import 'package:warteg_app/screen/address_page.dart';
 import 'package:warteg_app/screen/home.dart';
@@ -23,6 +18,13 @@ import 'package:warteg_app/theme/color_theme.dart';
 import 'package:warteg_app/provider/cart_provider.dart';
 import 'package:warteg_app/provider/notification_provider.dart';
 import 'package:warteg_app/provider/purchase_history_provider.dart';
+
+// ─── Konstanta lokasi pickup restoran ────────────────────────────────────────
+// Ganti sesuai alamat warteg kamu
+const String _kPickupAddress =
+    'Warteg Bahari — Jl. Sudirman No. 10, Jakarta Pusat';
+const String _kPickupEstimate =
+    'Pesanan siap dalam ±15–20 menit setelah dikonfirmasi';
 
 class OrderDetailPage extends ConsumerStatefulWidget {
   final List<CartItemModel> items;
@@ -35,6 +37,35 @@ class OrderDetailPage extends ConsumerStatefulWidget {
 
 class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   bool _isLoading = false;
+
+  Future<bool> _showPinDialog(String paymentName) async {
+    final paymentDetail = ref
+        .read(paymentDetailProvider.notifier)
+        .getByMethod(paymentName);
+
+    if (paymentDetail == null || paymentDetail.pin == null) return false;
+
+    bool result = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _PinDialog(
+        paymentName: paymentName,
+        correctPin: paymentDetail.pin!,
+        onSuccess: () {
+          result = true;
+          Navigator.pop(ctx);
+        },
+        onCancel: () {
+          result = false;
+          Navigator.pop(ctx);
+        },
+      ),
+    );
+
+    return result;
+  }
 
   @override
   void initState() {
@@ -63,11 +94,14 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   Future<void> _placeOrder(dynamic checkout) async {
-    // 1. Validasi dulu sebelum apapun
-    if (checkout.selectedAddress == null) {
+    final isPickup = checkout.deliveryType == 'pickup';
+
+    // Validasi alamat hanya untuk delivery
+    if (!isPickup && checkout.selectedAddress == null) {
       _showSnack('Pilih alamat pengiriman terlebih dahulu', isError: true);
       return;
     }
+
     if (checkout.paymentMethod == null) {
       _showSnack('Pilih metode pembayaran terlebih dahulu', isError: true);
       return;
@@ -87,9 +121,12 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         );
         return;
       }
+
+      // PIN dulu sebelum loading dan addOrder
+      final pinValid = await _showPinDialog(paymentName);
+      if (!pinValid) return;
     }
 
-    // 2. Semua validasi lolos, baru loading
     setState(() => _isLoading = true);
 
     try {
@@ -102,17 +139,23 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       final isCOD = paymentName == "COD";
       final vaNumber = "8808${DateTime.now().millisecondsSinceEpoch}";
 
+      // Pickup langsung tunggu konfirmasi (skip bayar VA)
       final initialStatus = isBankVA
           ? OrderStatusModel.bayar
           : OrderStatusModel.tungguKonfirmasi;
 
+      // Untuk pickup, buat AddressModel dummy berisi info lokasi restoran
+      final orderAddress = isPickup
+          ? _buildPickupAddress()
+          : checkout.selectedAddress!;
+
       final order = OrderModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         items: checkout.items,
-        address: checkout.selectedAddress!,
+        address: orderAddress,
         paymentMethod: checkout.paymentMethod!,
         subtotal: checkout.subtotal,
-        ongkir: checkout.ongkir,
+        ongkir: checkout.ongkir, // sudah 0 kalau pickup dari CheckoutState
         discount: checkout.promoDiscount,
         total: checkout.total,
         createdAt: DateTime.now(),
@@ -122,6 +165,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         cancelExpiredAt: isCOD
             ? DateTime.now().add(const Duration(minutes: 2))
             : null,
+        deliveryType: checkout.deliveryType,
       );
 
       await ref.read(orderProvider.notifier).addOrder(order);
@@ -129,8 +173,12 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       ref
           .read(notificationProvider.notifier)
           .addNotification(
-            title: 'Pesanan Berhasil Dibuat',
-            message: isBankVA
+            title: isPickup
+                ? 'Pesanan Pickup Dibuat'
+                : 'Pesanan Berhasil Dibuat',
+            message: isPickup
+                ? 'Pesanan #${order.id.substring(8)} siap diambil setelah dikonfirmasi restoran.'
+                : (!isPickup && isBankVA)
                 ? 'Selesaikan pembayaran virtual account untuk pesanan #${order.id.substring(8)}.'
                 : 'Pesanan #${order.id.substring(8)} menunggu konfirmasi restoran.',
             orderId: order.id,
@@ -150,6 +198,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
       if (!mounted) return;
 
+      // Bank VA tetap ke invoice page
       if (isBankVA) {
         Navigator.pushReplacement(
           context,
@@ -160,10 +209,25 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         return;
       }
 
-      _showSnack('Pesanan berhasil dibuat! Menunggu konfirmasi restoran.');
+      _showSnack(
+        isPickup
+            ? 'Pesanan pickup berhasil! Menunggu konfirmasi restoran.'
+            : 'Pesanan berhasil dibuat! Menunggu konfirmasi restoran.',
+      );
       await Future.delayed(const Duration(milliseconds: 600));
 
       if (!mounted) return;
+
+      if (isPickup) {
+        ref.read(navbarIndexProvider.notifier).state =
+            3; // ganti 3 dengan index PickupPage kamu
+      } else {
+        ref.read(orderTabProvider.notifier).state =
+            OrderStatusModel.tungguKonfirmasi;
+        ref.read(navbarIndexProvider.notifier).state =
+            2; // ganti 2 dengan index OrderPage kamu
+      }
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => Home()),
@@ -178,6 +242,22 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     }
   }
 
+  /// Buat AddressModel dummy untuk pickup
+  /// (OrderModel butuh address, tapi pickup tidak pakai alamat user)
+  dynamic _buildPickupAddress() {
+    // Import AddressModel di atas sudah ada lewat checkout_provider
+    return (ref.read(addressProvider.notifier).defaultAddress)?.copyWith(
+          fullAddress: _kPickupAddress,
+          label: 'Pickup',
+          note: _kPickupEstimate,
+        ) ??
+        // Fallback kalau user belum punya alamat sama sekali
+        _PickupAddressModel(
+          fullAddress: _kPickupAddress,
+          note: _kPickupEstimate,
+        );
+  }
+
   void _showSnack(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -190,7 +270,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             : const Color(0xFF10B981),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 20), // ← naikkan bottom
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
       ),
     );
   }
@@ -198,6 +278,8 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   @override
   Widget build(BuildContext context) {
     final checkout = ref.watch(checkoutProvider);
+    final isPickup = checkout.deliveryType == 'pickup';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7F4),
       bottomNavigationBar: _BottomBar(
@@ -214,25 +296,39 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 40),
                 children: [
-                  _SectionCard(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AddressPage()),
-                    ),
-                    icon: Icons.location_on_rounded,
-                    iconColor: ColorTheme.buttonPrimary,
-                    title: 'Alamat Pengiriman',
-                    subtitle: checkout.selectedAddress == null
-                        ? 'Pilih alamat pengiriman'
-                        : checkout.selectedAddress!.fullAddress,
-                    subtitleColor: checkout.selectedAddress == null
-                        ? Colors.grey.shade400
-                        : Colors.grey.shade600,
-                    trailing: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Colors.grey,
-                    ),
+                  // ── Toggle Dikirim / Pickup ──────────────────────────────
+                  _DeliveryToggle(
+                    selected: checkout.deliveryType,
+                    onChanged: (val) {
+                      ref.read(checkoutProvider.notifier).setDeliveryType(val);
+                    },
                   ),
+                  const SizedBox(height: 16),
+
+                  // ── Alamat / Info Pickup ─────────────────────────────────
+                  if (isPickup)
+                    const _PickupInfoCard()
+                  else
+                    _SectionCard(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AddressPage()),
+                      ),
+                      icon: Icons.location_on_rounded,
+                      iconColor: ColorTheme.buttonPrimary,
+                      title: 'Alamat Pengiriman',
+                      subtitle: checkout.selectedAddress == null
+                          ? 'Pilih alamat pengiriman'
+                          : checkout.selectedAddress!.fullAddress,
+                      subtitleColor: checkout.selectedAddress == null
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.grey,
+                      ),
+                    ),
+
                   const SizedBox(height: 20),
                   _SectionLabel(
                     label: 'Item Pesanan (${checkout.items.length})',
@@ -316,6 +412,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                     promoDiscount: checkout.promoDiscount,
                     total: checkout.total,
                     paymentMethod: checkout.paymentMethod?.name,
+                    isPickup: isPickup,
                     formatRupiah: _formatRupiah,
                   ),
                 ],
@@ -328,7 +425,193 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 }
 
-// ─── Sub-widgets (tidak berubah dari versi sebelumnya) ───────────────────────
+// ─── Pickup address fallback (kalau user belum punya alamat) ─────────────────
+// Ini hanya dipakai internal di _buildPickupAddress()
+class _PickupAddressModel {
+  final String fullAddress;
+  final String note;
+  _PickupAddressModel({required this.fullAddress, required this.note});
+}
+
+// ─── Toggle Dikirim / Pickup ─────────────────────────────────────────────────
+
+class _DeliveryToggle extends StatelessWidget {
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  const _DeliveryToggle({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          _ToggleOption(
+            label: 'Dikirim',
+            icon: Icons.delivery_dining_rounded,
+            isSelected: selected == 'delivery',
+            onTap: () => onChanged('delivery'),
+          ),
+          _ToggleOption(
+            label: 'Ambil Sendiri',
+            icon: Icons.storefront_rounded,
+            isSelected: selected == 'pickup',
+            onTap: () => onChanged('pickup'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToggleOption extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ToggleOption({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(13),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.07),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? ColorTheme.buttonPrimary
+                    : Colors.grey.shade400,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? ColorTheme.buttonPrimary
+                      : Colors.grey.shade400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Info Card Pickup ────────────────────────────────────────────────────────
+
+class _PickupInfoCard extends StatelessWidget {
+  const _PickupInfoCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.storefront_rounded,
+              color: Color(0xFF10B981),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Lokasi Pickup',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  _kPickupAddress,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12.5,
+                    color: Color(0xFF10B981),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  _kPickupEstimate,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 11.5,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Sub-widgets (tidak berubah) ─────────────────────────────────────────────
 
 class _AppBar extends StatelessWidget {
   @override
@@ -580,6 +863,32 @@ class _ItemCard extends StatelessWidget {
                         .toList(),
                   ),
                 ],
+                if (item.notes != null && item.notes!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.sticky_note_2_outlined,
+                          size: 13,
+                          color: Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            item.notes!,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11.5,
+                              color: Colors.grey.shade600,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -605,6 +914,7 @@ class _PriceSummary extends StatelessWidget {
   final int promoDiscount;
   final int total;
   final String? paymentMethod;
+  final bool isPickup;
   final String Function(int) formatRupiah;
 
   const _PriceSummary({
@@ -613,6 +923,7 @@ class _PriceSummary extends StatelessWidget {
     required this.promoDiscount,
     required this.total,
     required this.paymentMethod,
+    required this.isPickup,
     required this.formatRupiah,
   });
 
@@ -637,8 +948,11 @@ class _PriceSummary extends StatelessWidget {
           const SizedBox(height: 10),
           _SummaryRow(
             label: 'Ongkos Kirim',
-            icon: Icons.directions_bike_rounded,
-            value: 'Rp ${formatRupiah(ongkir)}',
+            icon: isPickup
+                ? Icons.storefront_rounded
+                : Icons.directions_bike_rounded,
+            value: isPickup ? 'Gratis' : 'Rp ${formatRupiah(ongkir)}',
+            valueColor: isPickup ? const Color(0xFF10B981) : null,
           ),
           const SizedBox(height: 10),
           _SummaryRow(
@@ -842,6 +1156,240 @@ class _BottomBar extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── PIN Dialog ───────────────────────────────────────────────────────────────
+
+class _PinDialog extends StatefulWidget {
+  final String paymentName;
+  final String correctPin;
+  final VoidCallback onSuccess;
+  final VoidCallback onCancel;
+
+  const _PinDialog({
+    required this.paymentName,
+    required this.correctPin,
+    required this.onSuccess,
+    required this.onCancel,
+  });
+
+  @override
+  State<_PinDialog> createState() => _PinDialogState();
+}
+
+class _PinDialogState extends State<_PinDialog> {
+  late final List<TextEditingController> _controllers;
+  late final List<FocusNode> _focusNodes;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = List.generate(6, (_) => TextEditingController());
+    _focusNodes = List.generate(6, (_) => FocusNode());
+  }
+
+  @override
+  void dispose() {
+    for (final c in _controllers) c.dispose();
+    for (final f in _focusNodes) f.dispose();
+    super.dispose();
+  }
+
+  void _checkPin() {
+    final entered = _controllers.map((c) => c.text).join();
+    if (entered.length < 6) return;
+
+    if (entered == widget.correctPin) {
+      widget.onSuccess();
+    } else {
+      setState(() => _hasError = true);
+      for (final c in _controllers) c.clear();
+      _focusNodes[0].requestFocus();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: ColorTheme.buttonPrimary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.lock_rounded,
+                color: ColorTheme.buttonPrimary,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Masukkan PIN ${widget.paymentName}',
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Konfirmasi pembayaran dengan PIN kamu',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                color: Colors.grey.shade500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 28),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(6, (i) {
+                return SizedBox(
+                  width: 38,
+                  height: 44,
+                  child: TextField(
+                    controller: _controllers[i],
+                    focusNode: _focusNodes[i],
+                    obscureText: true,
+                    textAlign: TextAlign.center,
+                    maxLength: 1,
+                    keyboardType: TextInputType.number,
+                    autofillHints: const [],
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    decoration: InputDecoration(
+                      counterText: '',
+                      filled: true,
+                      fillColor: _hasError
+                          ? Colors.red.shade50
+                          : Colors.grey.shade100,
+                      contentPadding: EdgeInsets.zero,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: _hasError
+                              ? Colors.red
+                              : ColorTheme.buttonPrimary,
+                          width: 2,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: _hasError
+                              ? Colors.red.shade200
+                              : Colors.transparent,
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                    onChanged: (val) {
+                      if (!mounted) return;
+                      setState(() => _hasError = false);
+
+                      if (val.isEmpty) {
+                        if (i > 0) _focusNodes[i - 1].requestFocus();
+                        return;
+                      }
+
+                      if (!RegExp(r'^\d$').hasMatch(val)) {
+                        _controllers[i].clear();
+                        return;
+                      }
+
+                      if (i < 5) {
+                        _focusNodes[i + 1].requestFocus();
+                      } else {
+                        _checkPin();
+                      }
+                    },
+                  ),
+                );
+              }),
+            ),
+            if (_hasError) ...[
+              const SizedBox(height: 12),
+              Text(
+                'PIN salah, coba lagi',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  color: Colors.red.shade400,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            const SizedBox(height: 28),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: widget.onCancel,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      'Batal',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _checkPin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ColorTheme.buttonPrimary,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      'Konfirmasi',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

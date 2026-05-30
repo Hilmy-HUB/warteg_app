@@ -1,8 +1,3 @@
-// lib/model/menu_model.dart
-//
-// Model tunggal yang dipakai BAIK oleh halaman user maupun admin.
-// ProductModel tidak lagi dibutuhkan — ganti semua referensinya ke MenuModel.
-
 enum MenuCategory { nasi, lauk, sayur, minuman, snack }
 
 extension MenuCategoryX on MenuCategory {

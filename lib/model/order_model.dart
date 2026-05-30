@@ -20,6 +20,7 @@ class OrderModel {
   final DateTime? cancelExpiredAt;
   final bool acceptedByAdmin;
   final DriverModel? driver;
+  final String deliveryType; // 'delivery' atau 'pickup'
 
   OrderModel({
     required this.id,
@@ -37,7 +38,7 @@ class OrderModel {
     this.cancelExpiredAt,
     this.acceptedByAdmin = false,
     this.driver,
-    
+    this.deliveryType = 'delivery',
   });
 
   OrderModel copyWith({
@@ -56,6 +57,7 @@ class OrderModel {
     DateTime? cancelExpiredAt,
     bool? acceptedByAdmin,
     DriverModel? driver,
+    String? deliveryType,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -73,8 +75,11 @@ class OrderModel {
       cancelExpiredAt: cancelExpiredAt ?? this.cancelExpiredAt,
       acceptedByAdmin: acceptedByAdmin ?? this.acceptedByAdmin,
       driver: driver ?? this.driver,
+      deliveryType: deliveryType ?? this.deliveryType,
     );
   }
+
+  bool get isPickup => deliveryType == 'pickup';
 
   // ================= TO JSON =================
 
@@ -99,6 +104,7 @@ class OrderModel {
       'cancelExpiredAt': cancelExpiredAt?.toIso8601String(),
       'acceptedByAdmin': acceptedByAdmin,
       'driver': driver?.toJson(),
+      'deliveryType': deliveryType,
     };
   }
 
@@ -133,6 +139,7 @@ class OrderModel {
       driver: json['driver'] != null
           ? DriverModel.fromJson(json['driver'])
           : null,
+      deliveryType: json['deliveryType'] ?? 'delivery',
     );
   }
 }

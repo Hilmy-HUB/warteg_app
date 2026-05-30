@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warteg_app/controller/auth_controller.dart';
+import 'package:warteg_app/screen/about_page.dart';
+import 'package:warteg_app/screen/help_support_page.dart';
 import 'package:warteg_app/screen/landing_page.dart';
 import 'package:warteg_app/screen/myaccount.dart';
 import 'package:warteg_app/screen/payment_page.dart';
 import 'package:warteg_app/screen/promo_page.dart';
+import 'package:warteg_app/screen/subscription_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 import 'package:warteg_app/provider/notification_provider.dart';
 import 'package:warteg_app/screen/notification_page.dart';
@@ -209,6 +212,10 @@ class ProfilPage extends ConsumerWidget {
                 icon: Icons.restaurant_menu_outlined,
                 title: "Berlangganan",
                 subtitle: "Kelola langganan dan paket Anda",
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SubscriptionPage()),
+                ),
               ),
 
               const SizedBox(height: 10),
@@ -222,18 +229,29 @@ class ProfilPage extends ConsumerWidget {
                 icon: Icons.language_outlined,
                 title: "Bahasa",
                 subtitle: "Pilih bahasa yang Anda inginkan",
+                onTap: () {
+                  // Handle language selection
+                },
               ),
 
               _buildMenuItem(
                 icon: Icons.help_outline_rounded,
                 title: "Bantuan & Dukungan",
                 subtitle: "Dapatkan bantuan dari layanan pelanggan",
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HelpSupportPage()),
+                ),
               ),
 
               _buildMenuItem(
                 icon: Icons.info_outline_rounded,
                 title: "Tentang Aplikasi",
                 subtitle: "Versi 1.0.0",
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AboutPage()),
+                ),
               ),
 
               const SizedBox(height: 10),

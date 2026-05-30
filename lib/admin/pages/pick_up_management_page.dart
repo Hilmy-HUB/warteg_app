@@ -2,22 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:warteg_app/model/cart_item_model.dart';
-import 'package:warteg_app/model/driver_mode.dart';
 import 'package:warteg_app/model/order_model.dart';
 import 'package:warteg_app/model/order_status_model.dart';
 import 'package:warteg_app/provider/notification_provider.dart';
 import 'package:warteg_app/provider/order_provider.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 
-class OrderManagementPage extends ConsumerStatefulWidget {
-  const OrderManagementPage({super.key});
+class PickupOrderPage extends ConsumerStatefulWidget {
+  const PickupOrderPage({super.key});
 
   @override
-  ConsumerState<OrderManagementPage> createState() =>
-      _OrderManagementPageState();
+  ConsumerState<PickupOrderPage> createState() => _PickupOrderPageState();
 }
 
-class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
+class _PickupOrderPageState extends ConsumerState<PickupOrderPage>
     with SingleTickerProviderStateMixin {
   late TabController _tab;
 
@@ -36,13 +34,11 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
   @override
   Widget build(BuildContext context) {
     final orders = ref.watch(orderProvider);
-
-    // Hanya delivery
-    final deliveryOrders = orders
-        .where((o) => o.deliveryType == 'delivery')
+    final pickupOrders = orders
+        .where((o) => o.deliveryType == 'pickup')
         .toList();
 
-    final incoming = deliveryOrders
+    final incoming = pickupOrders
         .where(
           (o) =>
               o.status == OrderStatusModel.tungguKonfirmasi &&
@@ -50,22 +46,21 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
         )
         .toList();
 
-    final processing = deliveryOrders
+    final processing = pickupOrders
         .where(
           (o) => o.acceptedByAdmin && o.status == OrderStatusModel.diproses,
         )
         .toList();
 
-    final delivering = deliveryOrders
-        .where((o) => o.status == OrderStatusModel.diantar)
+    final siapDiambil = pickupOrders
+        .where((o) => o.status == OrderStatusModel.siapDiambil)
         .toList();
 
-    // Jadi ini:
-    final done = deliveryOrders
+    final done = pickupOrders
         .where((o) => o.status == OrderStatusModel.selesai)
         .toList();
 
-    final cancelled = deliveryOrders
+    final cancelled = pickupOrders
         .where((o) => o.status == OrderStatusModel.dibatalkan)
         .toList();
 
@@ -74,12 +69,12 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header + Tabs ────────────────────────────────
+            // ── Header ───────────────────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 25, 20, 0),
               decoration: const BoxDecoration(
-                color: ColorTheme.primaryColor,
+                color: Color(0xFF10B981),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(30),
                   bottomRight: Radius.circular(30),
@@ -108,13 +103,13 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
                       ),
                       const SizedBox(width: 14),
                       const Icon(
-                        Icons.delivery_dining_rounded,
+                        Icons.storefront_rounded,
                         color: Colors.white,
                         size: 22,
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'Pesanan Delivery',
+                        'Pesanan Pickup',
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 20,
@@ -145,11 +140,9 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
                     tabs: [
                       Tab(text: 'Masuk (${incoming.length})'),
                       Tab(text: 'Diproses (${processing.length})'),
-                      Tab(text: 'Diantar (${delivering.length})'),
+                      Tab(text: 'Siap Diambil (${siapDiambil.length})'),
                       Tab(text: 'Selesai (${done.length})'),
-                      Tab(
-                        text: 'Dibatalkan (${cancelled.length})',
-                      ), // tambah ini
+                      Tab(text: 'Dibatalkan (${cancelled.length})'),
                     ],
                   ),
                 ],
@@ -159,19 +152,19 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
             Expanded(
               child: TabBarView(
                 controller: _tab,
+                // TabBarView:
                 children: [
-                  _OrderList(orders: incoming, mode: _CardMode.incoming),
-                  _OrderList(
-                    orders: processing,
-                    mode: _CardMode.processingDelivery,
+                  _PickupList(orders: incoming, mode: _PickupMode.incoming),
+                  _PickupList(orders: processing, mode: _PickupMode.processing),
+                  _PickupList(
+                    orders: siapDiambil,
+                    mode: _PickupMode.siapDiambil,
                   ),
-                  _OrderList(orders: delivering, mode: _CardMode.delivering),
-                  _OrderList(orders: done, mode: _CardMode.done),
-                  _OrderList(
-                    orders: cancelled,
-                    mode: _CardMode.done,
-                  ), // tambah ini
+                  _PickupList(orders: done, mode: _PickupMode.done),
+                  _PickupList(orders: cancelled, mode: _PickupMode.cancelled),
                 ],
+
+                // Enum — tambah siapDiambil:
               ),
             ),
           ],
@@ -181,17 +174,17 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
   }
 }
 
-// ─── Mode ─────────────────────────────────────────────────────────────────────
+// ── Mode ──────────────────────────────────────────────────────────────────────
 
-enum _CardMode { incoming, processingDelivery, delivering, done }
+enum _PickupMode { incoming, processing, siapDiambil, done, cancelled }
 
-// ─── Order List ───────────────────────────────────────────────────────────────
+// ── List ──────────────────────────────────────────────────────────────────────
 
-class _OrderList extends ConsumerWidget {
+class _PickupList extends ConsumerWidget {
   final List<OrderModel> orders;
-  final _CardMode mode;
+  final _PickupMode mode;
 
-  const _OrderList({required this.orders, required this.mode});
+  const _PickupList({required this.orders, required this.mode});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -208,14 +201,14 @@ class _OrderList extends ConsumerWidget {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.inbox_outlined,
+                Icons.storefront_outlined,
                 size: 38,
                 color: Colors.grey.shade300,
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Tidak ada pesanan delivery',
+              'Tidak ada pesanan pickup',
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontWeight: FontWeight.w600,
@@ -230,18 +223,18 @@ class _OrderList extends ConsumerWidget {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       itemCount: orders.length,
-      itemBuilder: (_, i) => _OrderCard(order: orders[i], mode: mode),
+      itemBuilder: (_, i) => _PickupCard(order: orders[i], mode: mode),
     );
   }
 }
 
-// ─── Order Card ───────────────────────────────────────────────────────────────
+// ── Card ──────────────────────────────────────────────────────────────────────
 
-class _OrderCard extends ConsumerWidget {
+class _PickupCard extends ConsumerWidget {
   final OrderModel order;
-  final _CardMode mode;
+  final _PickupMode mode;
 
-  const _OrderCard({required this.order, required this.mode});
+  const _PickupCard({required this.order, required this.mode});
 
   static String _fmt(int amount) {
     final s = amount.toString();
@@ -255,23 +248,21 @@ class _OrderCard extends ConsumerWidget {
   }
 
   Color _statusColor(OrderStatusModel s) => switch (s) {
-    OrderStatusModel.bayar => const Color(0xFFF59E0B),
     OrderStatusModel.tungguKonfirmasi => const Color(0xFF8B5CF6),
     OrderStatusModel.diproses => Colors.blue,
-    OrderStatusModel.diantar => Colors.teal,
-    OrderStatusModel.siapDiambil => const Color(0xFF10B981),
-    OrderStatusModel.selesai => ColorTheme.primaryColor,
+    OrderStatusModel.siapDiambil => const Color(0xFF10B981), // ← tambah
+    OrderStatusModel.selesai => const Color(0xFF10B981),
     OrderStatusModel.dibatalkan => Colors.red,
+    _ => Colors.grey,
   };
 
   String _statusLabel(OrderStatusModel s) => switch (s) {
-    OrderStatusModel.bayar => 'Menunggu Bayar',
     OrderStatusModel.tungguKonfirmasi => 'Tunggu Konfirmasi',
     OrderStatusModel.diproses => 'Diproses',
-    OrderStatusModel.siapDiambil => 'Siap Diambil',
-    OrderStatusModel.diantar => 'Diantar',
+    OrderStatusModel.siapDiambil => 'Siap Diambil', // ← tambah
     OrderStatusModel.selesai => 'Selesai',
     OrderStatusModel.dibatalkan => 'Dibatalkan',
+    _ => '-',
   };
 
   @override
@@ -311,19 +302,19 @@ class _OrderCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Header ──────────────────────────────────
+                // Header
                 Row(
                   children: [
                     Container(
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: ColorTheme.primaryColor.withOpacity(0.1),
+                        color: const Color(0xFF10B981).withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.person_rounded,
-                        color: ColorTheme.primaryColor,
+                        color: Color(0xFF10B981),
                         size: 22,
                       ),
                     ),
@@ -374,7 +365,6 @@ class _OrderCard extends ConsumerWidget {
                   ],
                 ),
 
-                // Waktu + Alamat
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -395,27 +385,40 @@ class _OrderCard extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_rounded,
-                      size: 12,
-                      color: Colors.grey.shade400,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        order.address.fullAddress,
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 11,
-                          color: Colors.grey.shade400,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+
+                // Pickup info banner
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.storefront_rounded,
+                        size: 12,
+                        color: Color(0xFF10B981),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Ambil langsung · ${order.address.label}',
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: Color(0xFF10B981),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 14),
@@ -430,22 +433,39 @@ class _OrderCard extends ConsumerWidget {
                 const SizedBox(height: 10),
 
                 // Pricing
-                if (order.ongkir > 0)
-                  _PriceRow(
-                    label: 'Ongkos Kirim',
-                    value: 'Rp ${_fmt(order.ongkir)}',
-                    icon: Icons.directions_bike_rounded,
-                    valueColor: Colors.grey.shade600,
-                  ),
                 if (order.discount > 0)
-                  _PriceRow(
-                    label: 'Diskon',
-                    value: '- Rp ${_fmt(order.discount)}',
-                    icon: Icons.local_offer_rounded,
-                    valueColor: const Color(0xFF10B981),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.local_offer_rounded,
+                          size: 13,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Diskon',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '- Rp ${_fmt(order.discount)}',
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF10B981),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
-                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -464,16 +484,16 @@ class _OrderCard extends ConsumerWidget {
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
-                        color: ColorTheme.primaryColor,
+                        color: Color(0xFF10B981),
                       ),
                     ),
                   ],
                 ),
 
-                // ── ACTION BUTTONS ────────────────────────────
+                // ── Action Buttons ────────────────────────────
 
                 // Tab Masuk: Terima / Tolak
-                if (mode == _CardMode.incoming) ...[
+                if (mode == _PickupMode.incoming) ...[
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -496,7 +516,7 @@ class _OrderCard extends ConsumerWidget {
                             notifNotifier.addNotification(
                               title: 'Pesanan Ditolak',
                               message:
-                                  'Maaf, pesanan #${order.id.substring(8)} tidak dapat kami proses saat ini.',
+                                  'Maaf, pesanan pickup #${order.id.substring(8)} tidak dapat kami proses.',
                               orderId: order.id,
                             );
                           },
@@ -537,23 +557,23 @@ class _OrderCard extends ConsumerWidget {
                               context,
                               title: 'Terima Pesanan?',
                               message:
-                                  'Pesanan akan masuk ke antrian dapur dan user akan mendapat notifikasi.',
+                                  'Pesanan pickup akan masuk ke antrian dapur.',
                               confirmLabel: 'Terima',
-                              confirmColor: ColorTheme.primaryColor,
+                              confirmColor: const Color(0xFF10B981),
                             );
                             if (confirm != true) return;
                             await notifier.acceptOrder(order.id);
                             notifNotifier.addNotification(
                               title: 'Pesanan Diterima ✅',
                               message:
-                                  'Pesanan #${order.id.substring(8)} sedang diproses oleh restoran.',
+                                  'Pesanan pickup #${order.id.substring(8)} sedang diproses. Segera datang ke restoran!',
                               orderId: order.id,
                             );
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 13),
                             decoration: BoxDecoration(
-                              color: ColorTheme.primaryColor.withOpacity(0.1),
+                              color: const Color(0xFF10B981).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: const Row(
@@ -562,7 +582,7 @@ class _OrderCard extends ConsumerWidget {
                                 Icon(
                                   Icons.check_rounded,
                                   size: 16,
-                                  color: ColorTheme.primaryColor,
+                                  color: Color(0xFF10B981),
                                 ),
                                 SizedBox(width: 6),
                                 Text(
@@ -571,7 +591,7 @@ class _OrderCard extends ConsumerWidget {
                                     fontFamily: 'Poppins',
                                     fontWeight: FontWeight.w700,
                                     fontSize: 13,
-                                    color: ColorTheme.primaryColor,
+                                    color: Color(0xFF10B981),
                                   ),
                                 ),
                               ],
@@ -583,8 +603,8 @@ class _OrderCard extends ConsumerWidget {
                   ),
                 ],
 
-                // Tab Diproses: Konfirmasi Dijalan
-                if (mode == _CardMode.processingDelivery) ...[
+                // Tab Diproses: Tandai Siap Diambil
+                if (mode == _PickupMode.processing) ...[
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
@@ -592,164 +612,46 @@ class _OrderCard extends ConsumerWidget {
                       onTap: () async {
                         final confirm = await _confirmDialog(
                           context,
-                          title: 'Konfirmasi Dijalan?',
+                          title: 'Pesanan Siap Diambil?',
                           message:
-                              'Pesanan akan ditandai sedang dalam perjalanan. Driver akan di-assign otomatis.',
-                          confirmLabel: 'Konfirmasi',
-                          confirmColor: Colors.teal,
+                              'Notifikasi akan dikirim ke pelanggan untuk segera mengambil pesanan.',
+                          confirmLabel: 'Siap Diambil',
+                          confirmColor: const Color(0xFF10B981),
                         );
                         if (confirm != true) return;
-                        final driver = DriverModel.randomDriver();
-                        await notifier.updateOrderStatusWithDriver(
+                        await notifier.updateOrderStatus(
                           order.id,
-                          OrderStatusModel.diantar,
-                          driver,
-                        );
+                          OrderStatusModel.siapDiambil,
+                        ); // ← fix
                         notifNotifier.addNotification(
-                          title: 'Pesanan Dalam Perjalanan 🛵',
+                          title: 'Pesanan Siap Diambil! 🎉',
                           message:
-                              'Pesanan #${order.id.substring(8)} sedang dalam perjalanan. Driver: ${driver.name} (${driver.vehicleNumber}).',
+                              'Pesanan pickup #${order.id.substring(8)} sudah siap. Silakan ambil di restoran.',
                           orderId: order.id,
                         );
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         decoration: BoxDecoration(
-                          color: Colors.teal.withOpacity(0.1),
+                          color: const Color(0xFF10B981).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.delivery_dining_rounded,
+                              Icons.check_circle_outline_rounded,
                               size: 18,
-                              color: Colors.teal,
+                              color: Color(0xFF10B981),
                             ),
                             SizedBox(width: 8),
                             Text(
-                              'Konfirmasi Dijalan',
+                              'Tandai Siap Diambil',
                               style: TextStyle(
                                 fontFamily: 'Poppins',
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
-                                color: Colors.teal,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-
-                // Tab Diantar: Konfirmasi Selesai
-                if (mode == _CardMode.delivering) ...[
-                  const SizedBox(height: 16),
-                  if (order.driver != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.indigo.withOpacity(0.06),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.indigo.withOpacity(0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: const BoxDecoration(
-                              color: Colors.indigo,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.person_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  order.driver!.name,
-                                  style: const TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                Text(
-                                  '${order.driver!.vehicleNumber} · ${order.driver!.vehicleType}',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 11,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.delivery_dining_rounded,
-                            color: Colors.indigo.withOpacity(0.6),
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  SizedBox(
-                    width: double.infinity,
-                    child: GestureDetector(
-                      onTap: () async {
-                        final confirm = await _confirmDialog(
-                          context,
-                          title: 'Konfirmasi Selesai?',
-                          message:
-                              'Tandai pesanan ini sudah diterima oleh customer.',
-                          confirmLabel: 'Selesai',
-                          confirmColor: Colors.green,
-                        );
-                        if (confirm != true) return;
-                        await notifier.completeOrder(order.id);
-                        notifNotifier.addNotification(
-                          title: 'Pesanan Selesai ✅',
-                          message:
-                              'Pesanan #${order.id.substring(8)} telah selesai diterima.',
-                          orderId: order.id,
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.check_circle_rounded,
-                              size: 18,
-                              color: Colors.green,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Konfirmasi Selesai',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                                color: Colors.green,
+                                color: Color(0xFF10B981),
                               ),
                             ),
                           ],
@@ -819,7 +721,7 @@ class _OrderCard extends ConsumerWidget {
   }
 }
 
-// ─── Sub-widgets ──────────────────────────────────────────────────────────────
+// ── Item Row ──────────────────────────────────────────────────────────────────
 
 class _ItemRow extends StatelessWidget {
   final CartItemModel item;
@@ -847,7 +749,7 @@ class _ItemRow extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: ColorTheme.primaryColor.withOpacity(0.1),
+              color: const Color(0xFF10B981).withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
@@ -857,7 +759,7 @@ class _ItemRow extends StatelessWidget {
                   fontFamily: 'Poppins',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: ColorTheme.primaryColor,
+                  color: Color(0xFF10B981),
                 ),
               ),
             ),
@@ -889,7 +791,7 @@ class _ItemRow extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: ColorTheme.primaryColor.withOpacity(0.08),
+                              color: const Color(0xFF10B981).withOpacity(0.08),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -898,7 +800,7 @@ class _ItemRow extends StatelessWidget {
                                 fontFamily: 'Poppins',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: ColorTheme.primaryColor,
+                                color: Color(0xFF10B981),
                               ),
                             ),
                           ),
@@ -953,50 +855,6 @@ class _ItemRow extends StatelessWidget {
               fontWeight: FontWeight.w700,
               fontSize: 13,
               color: Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PriceRow extends StatelessWidget {
-  final String label, value;
-  final IconData icon;
-  final Color valueColor;
-
-  const _PriceRow({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 13, color: Colors.grey.shade400),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 12,
-              color: Colors.grey.shade500,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: valueColor,
             ),
           ),
         ],

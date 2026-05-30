@@ -29,6 +29,8 @@ class _MenuPageState extends ConsumerState<MenuPage> {
         ? allMenus
         : allMenus.where((m) => m.category == _activeCategory).toList();
 
+    result = result.where((m) => m.isAvailable).toList();
+
     if (_searchQuery.isNotEmpty) {
       result = result
           .where(
@@ -156,38 +158,55 @@ class _MenuPageState extends ConsumerState<MenuPage> {
               const SizedBox(height: 25),
 
               // Title + count badge
+              // Title + count badge
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Text(
+                          _searchQuery.isNotEmpty
+                              ? 'Hasil untuk "$_searchQuery"'
+                              : "Semua Menu",
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: ColorTheme.buttonPrimary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${menuList.length}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Poppins',
+                              color: ColorTheme.buttonPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
                     Text(
                       _searchQuery.isNotEmpty
-                          ? 'Hasil untuk "$_searchQuery"'
-                          : "Semua Menu",
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                          ? '${menuList.length} menu ditemukan'
+                          : 'Menu yang tersedia saat ini',
+                      style: TextStyle(
                         fontFamily: 'Poppins',
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: ColorTheme.buttonPrimary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${menuList.length}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
-                          color: ColorTheme.buttonPrimary,
-                        ),
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
                       ),
                     ),
                   ],

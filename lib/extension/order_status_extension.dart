@@ -1,16 +1,18 @@
 import 'package:warteg_app/model/order_status_model.dart';
- 
+
 extension OrderStatusExtension on OrderStatusModel {
   String get label {
     switch (this) {
       case OrderStatusModel.bayar:
         return 'Bayar';
       case OrderStatusModel.tungguKonfirmasi:
-        return 'Tunggu Konfirmasi';
+        return 'Menunggu';
       case OrderStatusModel.diproses:
         return 'Diproses';
       case OrderStatusModel.diantar:
         return 'Diantar';
+      case OrderStatusModel.siapDiambil:
+        return 'Siap Diambil';
       case OrderStatusModel.selesai:
         return 'Selesai';
       case OrderStatusModel.dibatalkan:
@@ -18,4 +20,3 @@ extension OrderStatusExtension on OrderStatusModel {
     }
   }
 }
- 

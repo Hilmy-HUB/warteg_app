@@ -242,7 +242,7 @@ class _PaymentInputPageState extends ConsumerState<PaymentInputPage> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                '.',
+                                'Halaman ini hanya untuk simulasi. Data yang dimasukkan tidak akan disimpan secara permanen atau digunakan untuk transaksi nyata.',
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 11.5,

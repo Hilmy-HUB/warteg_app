@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:warteg_app/admin/pages/menu_management_page.dart';
 import 'package:warteg_app/admin/pages/order_management_page.dart';
+import 'package:warteg_app/admin/pages/pick_up_management_page.dart';
 import 'package:warteg_app/admin/pages/promo_management_page.dart';
 import 'package:warteg_app/admin/pages/sales_report_page.dart';
 import 'package:warteg_app/admin/widgets/admin_stats_card.dart';
@@ -17,7 +18,7 @@ class AdminDashboardPage extends ConsumerWidget {
 
   Future<void> _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('admin_logged_in'); // ganti dengan key login admin kamu
+    await prefs.remove('admin_logged_in');
     if (!context.mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
@@ -35,13 +36,26 @@ class AdminDashboardPage extends ConsumerWidget {
       decimalDigits: 0,
     );
 
-    final pendingCount = orders
+    // Pending delivery
+    final pendingDelivery = orders
         .where(
           (o) =>
               o.status == OrderStatusModel.tungguKonfirmasi &&
-              !o.acceptedByAdmin,
+              !o.acceptedByAdmin &&
+              o.deliveryType == 'delivery',
         )
         .length;
+
+    // Pending pickup
+    final pendingPickup = orders
+        .where(
+          (o) =>
+              o.status == OrderStatusModel.tungguKonfirmasi &&
+              !o.acceptedByAdmin &&
+              o.deliveryType == 'pickup',
+        )
+        .length;
+
     final todayRevenue = orders
         .where(
           (o) =>
@@ -51,6 +65,7 @@ class AdminDashboardPage extends ConsumerWidget {
               o.createdAt.year == DateTime.now().year,
         )
         .fold(0, (sum, o) => sum + (o.subtotal - o.discount));
+
     final totalDone = orders
         .where((o) => o.status == OrderStatusModel.selesai)
         .length;
@@ -118,7 +133,6 @@ class AdminDashboardPage extends ConsumerWidget {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 4),
                     Text(
                       DateFormat(
@@ -131,7 +145,6 @@ class AdminDashboardPage extends ConsumerWidget {
                         color: Colors.white.withOpacity(0.75),
                       ),
                     ),
-
                     const SizedBox(height: 24),
 
                     // Profile card
@@ -198,7 +211,7 @@ class AdminDashboardPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Stat Cards ────────────────────────────
+                    // ── Stat Cards ─────────────────────────────
                     GridView.count(
                       crossAxisCount: 2,
                       crossAxisSpacing: 12,
@@ -207,12 +220,21 @@ class AdminDashboardPage extends ConsumerWidget {
                       physics: const NeverScrollableScrollPhysics(),
                       childAspectRatio: 1.5,
                       children: [
+                        // Pending delivery
                         AdminStatCard(
-                          title: 'Pesanan Pending',
-                          value: '$pendingCount',
-                          icon: Icons.pending_actions_rounded,
+                          title: 'Delivery Pending',
+                          value: '$pendingDelivery',
+                          icon: Icons.delivery_dining_rounded,
                           color: Colors.orange,
-                          subtitle: 'Hari ini',
+                          subtitle: 'Menunggu konfirmasi',
+                        ),
+                        // Pending pickup
+                        AdminStatCard(
+                          title: 'Pickup Pending',
+                          value: '$pendingPickup',
+                          icon: Icons.storefront_rounded,
+                          color: const Color(0xFF10B981),
+                          subtitle: 'Menunggu konfirmasi',
                         ),
                         AdminStatCard(
                           title: 'Pendapatan',
@@ -227,13 +249,6 @@ class AdminDashboardPage extends ConsumerWidget {
                           icon: Icons.check_circle_outline_rounded,
                           color: Colors.blue,
                           subtitle: 'Total',
-                        ),
-                        AdminStatCard(
-                          title: 'Total Pesanan',
-                          value: '${orders.length}',
-                          icon: Icons.receipt_long_rounded,
-                          color: Colors.purple,
-                          subtitle: 'Semua',
                         ),
                       ],
                     ),
@@ -254,15 +269,33 @@ class AdminDashboardPage extends ConsumerWidget {
 
                     _navCard(
                       context,
-                      icon: Icons.receipt_long_rounded,
+                      icon: Icons.delivery_dining_rounded,
                       color: Colors.orange,
-                      title: 'Kelola Pesanan',
-                      subtitle: '$pendingCount pesanan menunggu konfirmasi',
-                      badge: pendingCount > 0 ? '$pendingCount' : null,
+                      title: 'Pesanan Delivery',
+                      subtitle: pendingDelivery > 0
+                          ? '$pendingDelivery pesanan menunggu konfirmasi'
+                          : 'Kelola pesanan delivery',
+                      badge: pendingDelivery > 0 ? '$pendingDelivery' : null,
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const OrderManagementPage(),
+                        ),
+                      ),
+                    ),
+                    _navCard(
+                      context,
+                      icon: Icons.storefront_rounded,
+                      color: const Color(0xFF10B981),
+                      title: 'Pesanan Pickup',
+                      subtitle: pendingPickup > 0
+                          ? '$pendingPickup pesanan menunggu konfirmasi'
+                          : 'Kelola pesanan pickup',
+                      badge: pendingPickup > 0 ? '$pendingPickup' : null,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PickupOrderPage(),
                         ),
                       ),
                     ),

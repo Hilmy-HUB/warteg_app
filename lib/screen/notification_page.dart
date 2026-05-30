@@ -104,6 +104,8 @@ class NotificationPage extends ConsumerWidget {
 
                 return GestureDetector(
                   onTap: () {
+                    final isPickup = notif.title.contains('Pickup');
+
                     if (notif.title.contains('Pembayaran')) {
                       ref.read(orderTabProvider.notifier).state =
                           OrderStatusModel.tungguKonfirmasi;
@@ -116,16 +118,19 @@ class NotificationPage extends ConsumerWidget {
                     } else if (notif.title.contains('Selesai')) {
                       ref.read(orderTabProvider.notifier).state =
                           OrderStatusModel.selesai;
+                    } else if (isPickup) {
+                      ref.read(orderTabProvider.notifier).state =
+                          OrderStatusModel.tungguKonfirmasi;
                     } else {
-                      // default
                       ref.read(orderTabProvider.notifier).state =
                           OrderStatusModel.bayar;
                     }
 
-                    // pindah ke navbar order
-                    ref.read(navbarIndexProvider.notifier).state = 2;
+                    // arahkan ke navbar yang sesuai
+                    ref.read(navbarIndexProvider.notifier).state = isPickup
+                        ? 3
+                        : 2;
 
-                    // tutup halaman notif
                     Navigator.pop(context);
                   },
                   child: Container(
