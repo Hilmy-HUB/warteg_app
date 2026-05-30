@@ -1,8 +1,8 @@
-import 'package:warteg_app/model/product_model.dart';
+import 'package:warteg_app/model/menu_model.dart';
 
 class BannerItem {
   final String image;
-  final ProductModel product;
+  final MenuModel product;
 
   const BannerItem({required this.image, required this.product});
 }
@@ -10,50 +10,50 @@ class BannerItem {
 final List<BannerItem> bannerItems = [
   BannerItem(
     image: 'assets/images/homepage/paket1.png',
-    product: ProductModel(
-      id: '1',
-      menuName: "Paket 1",
+    product: MenuModel(
+      id: 'banner_1',
+      name: "Paket 1",
       description:
-          'YANG KAMU DAPATKAN:\nNasi, Ayam Serundeng, Sambel Goreng Kentang, Minum Es Teh Manis .',
+          'YANG KAMU DAPATKAN:\nNasi, Ayam Serundeng, Sambel Goreng Kentang, Minum Es Teh Manis.',
       price: 27000,
-      image: 'assets/images/homepage/paket1.png',
-      category: 'recommended',
+      category: MenuCategory.nasi,
+      imageUrl: 'assets/images/homepage/paket1.png',
     ),
   ),
   BannerItem(
     image: 'assets/images/homepage/paket2.png',
-    product: ProductModel(
-      id: '2',
-      menuName: "Paket 2",
+    product: MenuModel(
+      id: 'banner_2',
+      name: "Paket 2",
       description:
-          'YANG KAMU DAPATKAN:\nNasi, Telur Balado, Sambel Goreng Kentang, Minum Es Teh Manis .',
+          'YANG KAMU DAPATKAN:\nNasi, Telur Balado, Sambel Goreng Kentang, Minum Es Teh Manis.',
       price: 20000,
-      image: 'assets/images/homepage/paket2.png',
-      category: 'recommended',
+      category: MenuCategory.nasi,
+      imageUrl: 'assets/images/homepage/paket2.png',
     ),
   ),
   BannerItem(
     image: 'assets/images/homepage/paket3.png',
-    product: ProductModel(
-      id: '3',
-      menuName: "Paket 3",
+    product: MenuModel(
+      id: 'banner_3',
+      name: "Paket 3",
       description:
-          'YANG KAMU DAPATKAN:\nNasi, Orek Tempe & Labu Siam, Tumis Sayur, Minum Es Teh Manis .',
+          'YANG KAMU DAPATKAN:\nNasi, Orek Tempe & Labu Siam, Tumis Sayur, Minum Es Teh Manis.',
       price: 23000,
-      image: 'assets/images/homepage/paket3.png',
-      category: 'recommended',
+      category: MenuCategory.nasi,
+      imageUrl: 'assets/images/homepage/paket3.png',
     ),
   ),
   BannerItem(
     image: 'assets/images/homepage/paket4.png',
-    product: ProductModel(
-      id: '4',
-      menuName: "Paket 4",
+    product: MenuModel(
+      id: 'banner_4',
+      name: "Paket 4",
       description:
           'YANG KAMU DAPATKAN:\nNasi, Ayam Serundeng, Telur Dadar, Sambel Goreng Kentang.',
       price: 30000,
-      image: 'assets/images/homepage/paket4.png',
-      category: 'recommended',
+      category: MenuCategory.nasi,
+      imageUrl: 'assets/images/homepage/paket4.png',
     ),
   ),
 ];

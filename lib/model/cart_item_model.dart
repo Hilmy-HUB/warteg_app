@@ -5,6 +5,7 @@ class CartItemModel {
   final int basePrice;
   final List<String> addOns;
   final int hargaSatuan;
+  final String? notes;
   int quantity;
   bool isSelected;
 
@@ -15,6 +16,7 @@ class CartItemModel {
     required this.basePrice,
     required this.addOns,
     required this.hargaSatuan,
+    required this.notes,
     required this.quantity,
     this.isSelected = true,
   });
@@ -47,6 +49,7 @@ class CartItemModel {
       addOns: List<String>.from(json['addOns']),
       hargaSatuan: json['hargaSatuan'],
       quantity: json['quantity'],
+      notes: json['notes'],
       isSelected: json['isSelected'] ?? true,
     );
   }

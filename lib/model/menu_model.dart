@@ -1,4 +1,7 @@
 // lib/model/menu_model.dart
+//
+// Model tunggal yang dipakai BAIK oleh halaman user maupun admin.
+// ProductModel tidak lagi dibutuhkan — ganti semua referensinya ke MenuModel.
 
 enum MenuCategory { nasi, lauk, sayur, minuman, snack }
 
@@ -19,6 +22,10 @@ class MenuModel {
   final double price;
   final MenuCategory category;
   final bool isAvailable;
+
+  /// Path asset ATAU URL gambar.
+  /// Contoh asset  : 'assets/images/product/ayamkalio.png'
+  /// Contoh network: 'https://example.com/img/ayam.jpg'
   final String? imageUrl;
 
   const MenuModel({
@@ -41,32 +48,33 @@ class MenuModel {
     String? imageUrl,
   }) =>
       MenuModel(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        description: description ?? this.description,
-        price: price ?? this.price,
-        category: category ?? this.category,
-        isAvailable: isAvailable ?? this.isAvailable,
-        imageUrl: imageUrl ?? this.imageUrl,
+        id          : id          ?? this.id,
+        name        : name        ?? this.name,
+        description : description ?? this.description,
+        price       : price       ?? this.price,
+        category    : category    ?? this.category,
+        isAvailable : isAvailable ?? this.isAvailable,
+        imageUrl    : imageUrl    ?? this.imageUrl,
       );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
+        'id'         : id,
+        'name'       : name,
         'description': description,
-        'price': price,
-        'category': category.name,
+        'price'      : price,
+        'category'   : category.name,
         'isAvailable': isAvailable,
-        'imageUrl': imageUrl,
+        'imageUrl'   : imageUrl,
       };
 
   factory MenuModel.fromJson(Map<String, dynamic> json) => MenuModel(
-        id: json['id'],
-        name: json['name'],
-        description: json['description'] ?? '',
-        price: (json['price'] as num).toDouble(),
-        category: MenuCategory.values.byName(json['category'] ?? 'nasi'),
-        isAvailable: json['isAvailable'] ?? true,
-        imageUrl: json['imageUrl'],
+        id          : json['id'] as String,
+        name        : json['name'] as String,
+        description : json['description'] as String? ?? '',
+        price       : (json['price'] as num).toDouble(),
+        category    : MenuCategory.values.byName(
+                          json['category'] as String? ?? 'lauk'),
+        isAvailable : json['isAvailable'] as bool? ?? true,
+        imageUrl    : json['imageUrl'] as String?,
       );
 }

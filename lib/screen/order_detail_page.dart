@@ -1,3 +1,10 @@
+// lib/screen/order_detail_page.dart
+//
+// Perubahan:
+//   • COD & Digital → status awal: tungguKonfirmasi (bukan diproses)
+//   • VA: tetap bayar → setelah bayar manual masuk tungguKonfirmasi
+//   • cancelExpiredAt hanya untuk COD (digital tidak perlu timer cancel karena langsung konfirmasi)
+
 import 'package:flutter/material.dart';
 import 'package:warteg_app/model/order_status_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +22,7 @@ import 'package:warteg_app/screen/promo_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 import 'package:warteg_app/provider/cart_provider.dart';
 import 'package:warteg_app/provider/notification_provider.dart';
+import 'package:warteg_app/provider/purchase_history_provider.dart';
 
 class OrderDetailPage extends ConsumerStatefulWidget {
   final List<CartItemModel> items;
@@ -34,14 +42,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
     Future.microtask(() {
       final checkoutNotifier = ref.read(checkoutProvider.notifier);
-
       checkoutNotifier.setItems(widget.items);
 
-      // =========================
-      // AMBIL DEFAULT ADDRESS
-      // =========================
       final defaultAddress = ref.read(addressProvider.notifier).defaultAddress;
-
       if (defaultAddress != null) {
         checkoutNotifier.setDefaultAddress(defaultAddress);
       }
@@ -60,26 +63,23 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 
   Future<void> _placeOrder(dynamic checkout) async {
+    // 1. Validasi dulu sebelum apapun
     if (checkout.selectedAddress == null) {
       _showSnack('Pilih alamat pengiriman terlebih dahulu', isError: true);
       return;
     }
-
     if (checkout.paymentMethod == null) {
       _showSnack('Pilih metode pembayaran terlebih dahulu', isError: true);
       return;
     }
 
     final paymentName = checkout.paymentMethod!.name as String;
-
-    // Only digital payments require saved account details
     const digitalMethods = {"Mastercard", "DANA", "GoPay", "OVO"};
 
     if (digitalMethods.contains(paymentName)) {
       final paymentDetail = ref
           .read(paymentDetailProvider.notifier)
           .getByMethod(paymentName);
-
       if (paymentDetail == null) {
         _showSnack(
           'Please enter your $paymentName account details first',
@@ -89,104 +89,92 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       }
     }
 
-    final vaNumber = "8808${DateTime.now().millisecondsSinceEpoch}";
-
+    // 2. Semua validasi lolos, baru loading
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 400));
-    final isBankVA =
-        paymentName == "BCA" ||
-        paymentName == "BNI" ||
-        paymentName == "Mandiri";
 
-    final isCOD = paymentName == "COD";
+    try {
+      await Future.delayed(const Duration(milliseconds: 400));
 
-    final isDigital = digitalMethods.contains(paymentName);
+      final isBankVA =
+          paymentName == "BCA" ||
+          paymentName == "BNI" ||
+          paymentName == "Mandiri";
+      final isCOD = paymentName == "COD";
+      final vaNumber = "8808${DateTime.now().millisecondsSinceEpoch}";
 
-    final order = OrderModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      items: checkout.items,
-      address: checkout.selectedAddress!,
-      paymentMethod: checkout.paymentMethod!,
-      subtotal: checkout.subtotal,
-      ongkir: checkout.ongkir,
-      discount: checkout.promoDiscount,
-      total: checkout.total,
-      createdAt: DateTime.now(),
-      status: (isCOD || isDigital)
-          ? OrderStatusModel.diproses
-          : OrderStatusModel.bayar,
-      vaNumber: (isCOD || isDigital) ? null : vaNumber,
-      expiredAt: DateTime.now().add(const Duration(hours: 24)),
-      cancelExpiredAt: isCOD || isDigital
-          ? DateTime.now().add(const Duration(minutes: 2))
-          : null,
-    );
+      final initialStatus = isBankVA
+          ? OrderStatusModel.bayar
+          : OrderStatusModel.tungguKonfirmasi;
 
-    await ref.read(orderProvider.notifier).addOrder(order);
+      final order = OrderModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        items: checkout.items,
+        address: checkout.selectedAddress!,
+        paymentMethod: checkout.paymentMethod!,
+        subtotal: checkout.subtotal,
+        ongkir: checkout.ongkir,
+        discount: checkout.promoDiscount,
+        total: checkout.total,
+        createdAt: DateTime.now(),
+        status: initialStatus,
+        vaNumber: isBankVA ? vaNumber : null,
+        expiredAt: DateTime.now().add(const Duration(hours: 24)),
+        cancelExpiredAt: isCOD
+            ? DateTime.now().add(const Duration(minutes: 2))
+            : null,
+      );
 
-    ref
-        .read(notificationProvider.notifier)
-        .addNotification(
-          title: 'Pesanan Baru',
-          message: 'Pesanan #${order.id.substring(8)} berhasil dibuat',
-          orderId: order.id,
-        );
+      await ref.read(orderProvider.notifier).addOrder(order);
 
-    ref
-        .read(notificationProvider.notifier)
-        .addNotification(
-          title: 'Pesanan Dibuat',
-          message:
-              'Pesanan berhasil dibuat dengan total Rp ${_formatRupiah(order.total)}',
-        );
+      ref
+          .read(notificationProvider.notifier)
+          .addNotification(
+            title: 'Pesanan Berhasil Dibuat',
+            message: isBankVA
+                ? 'Selesaikan pembayaran virtual account untuk pesanan #${order.id.substring(8)}.'
+                : 'Pesanan #${order.id.substring(8)} menunggu konfirmasi restoran.',
+            orderId: order.id,
+          );
 
-    if (isBankVA) {
+      ref
+          .read(purchaseHistoryProvider.notifier)
+          .recordPurchase(
+            checkout.items
+                .map((item) => item.menuName as String)
+                .toList()
+                .cast<String>(),
+          );
+
       ref.read(cartProvider.notifier).clearCart();
       ref.read(checkoutProvider.notifier).clearCheckout();
-      setState(() => _isLoading = false);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => InvoicePage(order: order, vaNumber: vaNumber),
-        ),
-      );
-      return;
-    }
 
-    // Auto status progression for non-bank orders
-    Future.delayed(const Duration(seconds: 5), () {
-      ref
-          .read(orderProvider.notifier)
-          .updateOrderStatus(order.id, OrderStatusModel.diproses);
-    });
-    Future.delayed(const Duration(seconds: 10), () {
-      ref
-          .read(orderProvider.notifier)
-          .updateOrderStatus(order.id, OrderStatusModel.dijemput);
-    });
-    Future.delayed(const Duration(seconds: 15), () {
-      ref
-          .read(orderProvider.notifier)
-          .updateOrderStatus(order.id, OrderStatusModel.diantar);
-    });
-    Future.delayed(const Duration(seconds: 20), () {
-      ref
-          .read(orderProvider.notifier)
-          .updateOrderStatus(order.id, OrderStatusModel.selesai);
-    });
+      if (!mounted) return;
 
-    ref.read(cartProvider.notifier).clearCart();
-    ref.read(checkoutProvider.notifier).clearCheckout();
-    setState(() => _isLoading = false);
+      if (isBankVA) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => InvoicePage(order: order, vaNumber: vaNumber),
+          ),
+        );
+        return;
+      }
 
-    if (mounted) {
-      _showSnack('Order placed successfully!');
+      _showSnack('Pesanan berhasil dibuat! Menunggu konfirmasi restoran.');
       await Future.delayed(const Duration(milliseconds: 600));
+
+      if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => Home()),
         (route) => false,
       );
+    } catch (e, s) {
+      debugPrint('ERROR ORDER: $e');
+      debugPrintStack(stackTrace: s);
+      _showSnack('Terjadi kesalahan: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -202,7 +190,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
             : const Color(0xFF10B981),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 20), // ← naikkan bottom
       ),
     );
   }
@@ -212,27 +200,20 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final checkout = ref.watch(checkoutProvider);
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7F4),
-
-      // ── Bottom Bar ──────────────────────────────────────────
       bottomNavigationBar: _BottomBar(
         total: checkout.total,
         isLoading: _isLoading,
         onOrder: () => _placeOrder(checkout),
         formatRupiah: _formatRupiah,
       ),
-
       body: SafeArea(
         child: Column(
           children: [
-            // ── App Bar ──────────────────────────────────────
             _AppBar(),
-
-            // ── Scrollable Body ──────────────────────────────
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 40),
                 children: [
-                  // 1. Delivery Address
                   _SectionCard(
                     onTap: () => Navigator.push(
                       context,
@@ -252,23 +233,16 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                       color: Colors.grey,
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
-                  // 2. Order Items
                   _SectionLabel(
                     label: 'Item Pesanan (${checkout.items.length})',
                   ),
                   const SizedBox(height: 12),
-
                   ...checkout.items.map(
                     (item) =>
                         _ItemCard(item: item, formatRupiah: _formatRupiah),
                   ),
-
                   const SizedBox(height: 20),
-
-                  // 3. Promo & Discount
                   _SectionLabel(label: 'Promo & Diskon'),
                   const SizedBox(height: 12),
                   _SectionCard(
@@ -311,20 +285,14 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                             color: Colors.grey,
                           ),
                   ),
-
                   const SizedBox(height: 20),
-
-                  // 4. Payment Method
                   _SectionLabel(label: 'Payment Method'),
                   const SizedBox(height: 12),
-
                   _SectionCard(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const PaymentPage()),
-                      );
-                    },
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PaymentPage()),
+                    ),
                     icon: Icons.payment_rounded,
                     iconColor: ColorTheme.buttonPrimary,
                     title: 'Metode Pembayaran',
@@ -339,10 +307,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                       color: Colors.grey,
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
-                  // 5. Order Summary
                   _SectionLabel(label: 'Order Summary'),
                   const SizedBox(height: 12),
                   _PriceSummary(
@@ -363,7 +328,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   }
 }
 
-// ─── App Bar ─────────────────────────────────────────────────────────────────
+// ─── Sub-widgets (tidak berubah dari versi sebelumnya) ───────────────────────
 
 class _AppBar extends StatelessWidget {
   @override
@@ -412,8 +377,6 @@ class _AppBar extends StatelessWidget {
   }
 }
 
-// ─── Section Label ────────────────────────────────────────────────────────────
-
 class _SectionLabel extends StatelessWidget {
   final String label;
   const _SectionLabel({required this.label});
@@ -432,8 +395,6 @@ class _SectionLabel extends StatelessWidget {
     );
   }
 }
-
-// ─── Section Card (Address / Promo) ──────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
   final VoidCallback onTap;
@@ -522,8 +483,6 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-// ─── Item Card ────────────────────────────────────────────────────────────────
-
 class _ItemCard extends StatelessWidget {
   final CartItemModel item;
   final String Function(int) formatRupiah;
@@ -549,7 +508,6 @@ class _ItemCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Thumbnail
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.network(
@@ -569,10 +527,7 @@ class _ItemCard extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(width: 14),
-
-          // Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,9 +541,7 @@ class _ItemCard extends StatelessWidget {
                     color: Colors.black87,
                   ),
                 ),
-
                 const SizedBox(height: 4),
-
                 Text(
                   '${item.quantity}× Rp ${formatRupiah(item.hargaSatuan)}',
                   style: TextStyle(
@@ -597,7 +550,6 @@ class _ItemCard extends StatelessWidget {
                     color: Colors.grey.shade500,
                   ),
                 ),
-
                 if (item.addOns.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Wrap(
@@ -631,10 +583,7 @@ class _ItemCard extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(width: 8),
-
-          // Price
           Text(
             'Rp ${formatRupiah(item.totalHarga)}',
             style: const TextStyle(
@@ -649,8 +598,6 @@ class _ItemCard extends StatelessWidget {
     );
   }
 }
-
-// ─── Price Summary ────────────────────────────────────────────────────────────
 
 class _PriceSummary extends StatelessWidget {
   final int subtotal;
@@ -790,8 +737,6 @@ class _SummaryRow extends StatelessWidget {
   }
 }
 
-// ─── Bottom Bar ───────────────────────────────────────────────────────────────
-
 class _BottomBar extends StatelessWidget {
   final int total;
   final bool isLoading;
@@ -826,7 +771,6 @@ class _BottomBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Total
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -854,8 +798,6 @@ class _BottomBar extends StatelessWidget {
               ],
             ),
           ),
-
-          // Button
           SizedBox(
             height: 52,
             child: ElevatedButton(

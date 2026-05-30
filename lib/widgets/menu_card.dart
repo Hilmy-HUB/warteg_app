@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:warteg_app/model/product_model.dart';
+import 'package:warteg_app/model/menu_model.dart';
 import 'package:warteg_app/screen/detail_product_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 
 class MenuCard extends StatelessWidget {
-  final ProductModel menu;
+  final MenuModel menu;
 
   const MenuCard({Key? key, required this.menu}) : super(key: key);
 
@@ -13,30 +13,20 @@ class MenuCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // ==========================================
-        // PINDAH KE DETAIL PRODUCT PAGE
-        // KIRIM DATA PRODUK YANG DIKLIK
-        // ==========================================
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DetailProductPage(
-              product: menu,
-            ),
+            builder: (context) => DetailProductPage(product: menu),
           ),
         );
       },
-
       child: Container(
         width: 150,
         margin: const EdgeInsets.only(right: 15),
         decoration: BoxDecoration(
           color: ColorTheme.primaryColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.grey.shade300,
-            width: 1,
-          ),
+          border: Border.all(color: Colors.grey.shade300, width: 1),
         ),
         child: Padding(
           padding: const EdgeInsets.all(10.0),
@@ -45,18 +35,32 @@ class MenuCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  menu.image,
-                  height: 140,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+                child: menu.imageUrl != null
+                    ? (menu.imageUrl!.startsWith('http')
+                        ? Image.network(
+                            menu.imageUrl!,
+                            height: 140,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.asset(
+                            menu.imageUrl!,
+                            height: 140,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ))
+                    : Container(
+                        height: 140,
+                        width: double.infinity,
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.fastfood, color: Colors.grey),
+                      ),
               ),
 
               const SizedBox(height: 12),
 
               Text(
-                menu.menuName,
+                menu.name,
                 style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.w700,

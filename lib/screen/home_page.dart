@@ -2,9 +2,10 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warteg_app/data/homepage_data.dart';
-import 'package:warteg_app/data/menu_data.dart';
+import 'package:warteg_app/model/menu_model.dart';
 import 'package:warteg_app/provider/address_provider.dart';
 import 'package:warteg_app/provider/cart_provider.dart';
+import 'package:warteg_app/provider/menu_provider.dart';
 import 'package:warteg_app/screen/address_page.dart';
 import 'package:warteg_app/screen/cart_page.dart';
 import 'package:warteg_app/screen/detail_product_page.dart';
@@ -12,6 +13,7 @@ import 'package:warteg_app/screen/notification_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 import 'package:warteg_app/widgets/menu_card.dart';
 import 'package:warteg_app/provider/notification_provider.dart';
+import 'package:warteg_app/provider/purchase_history_provider.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   final VoidCallback? onSearchTapped;
@@ -25,7 +27,6 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   int _halamanAktif = 0;
 
-  // Height of the floating bar so the scroll content doesn't hide behind it
   static const double _barHeight = 46;
   static const double _barTopPadding = 16;
   static const double _barBottomPadding = 12;
@@ -36,18 +37,36 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final cartItems = ref.watch(cartProvider);
     final addresses = ref.watch(addressProvider);
-    final hasUnreadNotif = ref.watch(notificationProvider)
-    .any((e) => e.isRead == false);
+    final hasUnreadNotif = ref
+        .watch(notificationProvider)
+        .any((e) => e.isRead == false);
 
     final int totalCart = cartItems.fold(0, (sum, item) => sum + item.quantity);
     final selectedAddress = addresses.where((a) => a.isSelected).firstOrNull;
 
+    // Rekomendasi & top of week dari initialMenus
+    // Sesuaikan dengan cara homepage_data.dart Anda menyediakan data
+    final allMenus = ref.watch(menuProvider);
+    final recommendedMenu = allMenus.take(4).toList();
+    final topNames = ref.watch(purchaseHistoryProvider.notifier).topMenuNames;
+    final topOfWeekMenu = topNames.isEmpty
+        ? allMenus
+              .where((m) => m.category != MenuCategory.minuman)
+              .toList()
+              .reversed
+              .take(4)
+              .toList()
+        : topNames
+              .map((name) => allMenus.where((m) => m.name == name).firstOrNull)
+              .whereType<MenuModel>()
+              .where((m) => m.category != MenuCategory.minuman)
+              .take(4)
+              .toList();
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7F4),
       body: SafeArea(
         child: Stack(
           children: [
-            // ── Scrollable content ────────────────────────────────────────
             SingleChildScrollView(
               padding: EdgeInsets.only(
                 top: _floatingBarTotalHeight,
@@ -55,20 +74,14 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
               child: Column(
                 children: [
-                  // =====================================================
-                  // LOCATION CARD
-                  // =====================================================
+                  // Location card
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AddressPage(),
-                          ),
-                        );
-                      },
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AddressPage()),
+                      ),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -160,124 +173,109 @@ class _HomePageState extends ConsumerState<HomePage> {
 
                   const SizedBox(height: 26),
 
-                  // =====================================================
-                  // BANNER — tappable, navigates to DetailProductPage
-                  // =====================================================
+                  // Banner carousel
                   CarouselSlider(
                     items: bannerItems.map((item) {
                       return Builder(
-                        builder: (BuildContext context) {
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      DetailProductPage(product: item.product),
-                                ),
-                              );
-                            },
-                            child: Stack(
-                              children: [
-                                // Banner image
-                                Container(
-                                  width: MediaQuery.of(context).size.width,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(24),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.08),
-                                        blurRadius: 14,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
-                                    image: DecorationImage(
-                                      image: AssetImage(item.image),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-
-                                // Gradient overlay at the bottom
-                                Positioned(
-                                  left: 0,
-                                  right: 0,
-                                  bottom: 0,
-                                  child: Container(
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      borderRadius: const BorderRadius.only(
-                                        bottomLeft: Radius.circular(24),
-                                        bottomRight: Radius.circular(24),
-                                      ),
-                                      gradient: LinearGradient(
-                                        begin: Alignment.bottomCenter,
-                                        end: Alignment.topCenter,
-                                        colors: [
-                                          Colors.black.withOpacity(0.55),
-                                          Colors.transparent,
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // Product name + tap hint at the bottom
-                                Positioned(
-                                  left: 16,
-                                  right: 16,
-                                  bottom: 14,
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          item.product.menuName,
-                                          style: const TextStyle(
-                                            fontFamily: 'Poppins',
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.22),
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                          border: Border.all(
-                                            color: Colors.white.withOpacity(
-                                              0.4,
-                                            ),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Lihat Detail',
-                                          style: TextStyle(
-                                            fontFamily: 'Poppins',
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                        builder: (context) => GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  DetailProductPage(product: item.product),
                             ),
-                          );
-                        },
+                          ),
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: MediaQuery.of(context).size.width,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.08),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                  image: DecorationImage(
+                                    image: AssetImage(item.image),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    borderRadius: const BorderRadius.only(
+                                      bottomLeft: Radius.circular(24),
+                                      bottomRight: Radius.circular(24),
+                                    ),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                      colors: [
+                                        Colors.black.withOpacity(0.55),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 16,
+                                right: 16,
+                                bottom: 14,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        item.product.name,
+                                        style: const TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.22),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.4),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'Lihat Detail',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       );
                     }).toList(),
                     options: CarouselOptions(
@@ -286,15 +284,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                       autoPlayInterval: const Duration(seconds: 5),
                       enlargeCenterPage: true,
                       viewportFraction: 0.88,
-                      onPageChanged: (index, reason) {
-                        setState(() => _halamanAktif = index);
-                      },
+                      onPageChanged: (index, _) =>
+                          setState(() => _halamanAktif = index),
                     ),
                   ),
 
-                  // =====================================================
-                  // INDICATOR
-                  // =====================================================
+                  // Indicator
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -317,9 +312,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
                   const SizedBox(height: 28),
 
-                  // =====================================================
-                  // RECOMMENDED
-                  // =====================================================
+                  // Rekomendasi
                   buildSectionTitle(
                     title: "Rekomendasi",
                     subtitle: "Pilihan terbaik untuk kamu",
@@ -331,17 +324,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
                       itemCount: recommendedMenu.length,
-                      itemBuilder: (context, index) {
-                        return MenuCard(menu: recommendedMenu[index]);
-                      },
+                      itemBuilder: (context, index) =>
+                          MenuCard(menu: recommendedMenu[index]),
                     ),
                   ),
 
                   const SizedBox(height: 28),
 
-                  // =====================================================
-                  // TOP OF WEEK
-                  // =====================================================
+                  // Top of week
                   buildSectionTitle(
                     title: "Terbaik Minggu Ini",
                     subtitle: "Menu paling populer minggu ini",
@@ -353,16 +343,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
                       itemCount: topOfWeekMenu.length,
-                      itemBuilder: (context, index) {
-                        return MenuCard(menu: topOfWeekMenu[index]);
-                      },
+                      itemBuilder: (context, index) =>
+                          MenuCard(menu: topOfWeekMenu[index]),
                     ),
                   ),
                 ],
               ),
             ),
 
-            // ── Floating header ───────────────────────────────────────────
+            // Floating header
             Positioned(
               top: 0,
               left: 0,
@@ -380,7 +369,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // ================= CENTER LOGO (TRUE CENTER) =================
                     Center(
                       child: Image.asset(
                         'assets/images/homepage/logo.png',
@@ -388,8 +376,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                         fit: BoxFit.contain,
                       ),
                     ),
-
-                    // ================= LEFT: SEARCH =================
                     Align(
                       alignment: Alignment.centerLeft,
                       child: GestureDetector(
@@ -430,23 +416,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                         ),
                       ),
                     ),
-
-                    // ================= RIGHT: CART =================
                     Align(
                       alignment: Alignment.centerRight,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // ================= NOTIFICATION =================
+                          // Notification
                           GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const NotificationPage(),
-                                ),
-                              );
-                            },
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationPage(),
+                              ),
+                            ),
                             child: Stack(
                               children: [
                                 Container(
@@ -470,7 +452,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                     size: 20,
                                   ),
                                 ),
-
                                 if (hasUnreadNotif)
                                   Positioned(
                                     top: 1,
@@ -488,7 +469,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
 
-                          // ================= CART =================
+                          // Cart
                           GestureDetector(
                             onTap: () => Navigator.push(
                               context,
@@ -520,7 +501,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                     size: 20,
                                   ),
                                 ),
-
                                 if (totalCart > 0)
                                   Positioned(
                                     top: -3,

@@ -1,154 +1,104 @@
-import 'package:warteg_app/model/product_model.dart';
+import 'package:warteg_app/model/menu_model.dart';
 
-final List<ProductModel> recommendedMenu = [
-  ProductModel(
+final List<MenuModel> initialMenus = [
+  // ── Lauk ──────────────────────────────────────────────────────────────────
+  MenuModel(
     id: '1',
-    menuName: "Ayam Kalio",
+    name: 'Ayam Kalio',
     description:
-        'Ayam Kalio adalah hidangan ayam yang disajikan dalam ketupan kacang-kacangan.',
+        'Ayam Kalio adalah hidangan ayam yang disajikan dalam kuah santan kental berbumbu rempah khas Padang.',
     price: 16000,
-    image: 'assets/images/product/ayamkalio.png',
-    category: 'recommended',
+    category: MenuCategory.lauk,
+    imageUrl: 'assets/images/product/ayamkalio.png',
   ),
-  ProductModel(
+  MenuModel(
     id: '2',
-    menuName: "Cumi Cabe Ijo",
+    name: 'Cumi Cabe Ijo',
     description:
-        'Cumi Cabe Ijo adalah cumi segar yang ditumis dengan cabai hijau pedas, bawang, dan bumbu gurih. Rasanya pedas, gurih, dan cocok disantap dengan nasi hangat.',
+        'Cumi segar yang ditumis dengan cabai hijau pedas, bawang, dan bumbu gurih. Rasanya pedas, gurih, dan cocok disantap dengan nasi hangat.',
     price: 15000,
-    image: 'assets/images/product/cumicabeijo.png',
-    category: 'recommended',
+    category: MenuCategory.lauk,
+    imageUrl: 'assets/images/product/cumicabeijo.png',
   ),
-  ProductModel(
+  MenuModel(
     id: '3',
-    menuName: "Mujair Cabe Ijo",
+    name: 'Mujair Cabe Ijo',
     description:
-        'Mujair Cabe Ijo adalah ikan mujair goreng atau digoreng setengah kering yang dimasak dengan sambal cabai hijau. Rasanya pedas, gurih, dan segar, cocok disantap dengan nasi hangat.',
+        'Ikan mujair goreng yang dimasak dengan sambal cabai hijau. Rasanya pedas, gurih, dan segar.',
     price: 20000,
-    image: 'assets/images/product/mujaircabeijo.png',
-    category: 'recommended',
+    category: MenuCategory.lauk,
+    imageUrl: 'assets/images/product/mujaircabeijo.png',
   ),
-  ProductModel(
+  MenuModel(
     id: '4',
-    menuName: "Sop Buntut",
+    name: 'Sop Buntut',
     description:
-        'Sop Buntut adalah sup berbahan buntut sapi yang dimasak lama hingga empuk, disajikan dengan kuah kaldu bening yang gurih, sayuran seperti wortel dan kentang, serta aroma rempah yang hangat. Rasanya kaya, lembut, dan cocok disantap saat hangat.',
+        'Sup berbahan buntut sapi yang dimasak lama hingga empuk, disajikan dengan kuah kaldu bening yang gurih dan sayuran.',
     price: 28000,
-    image: 'assets/images/product/sopbuntut.png',
-    category: 'recommended',
+    category: MenuCategory.lauk,
+    imageUrl: 'assets/images/product/sopbuntut.png',
+  ),
+  MenuModel(
+    id: '6',
+    name: 'Sambel Ati',
+    description:
+        'Sambal yang terbuat dari ati ampela, cabai, dan bumbu pilihan. Rasanya pedas dan gurih.',
+    price: 10000,
+    category: MenuCategory.lauk,
+    imageUrl: 'assets/images/product/sambelati.png',
+  ),
+  MenuModel(
+    id: '7',
+    name: 'Telor Balado',
+    description:
+        'Telur rebus yang dimasak dengan sambal balado pedas. Cocok sebagai lauk pendamping nasi.',
+    price: 7000,
+    category: MenuCategory.lauk,
+    imageUrl: 'assets/images/product/telorbalado.png',
+  ),
+
+  // ── Nasi ──────────────────────────────────────────────────────────────────
+  MenuModel(
+    id: '8',
+    name: 'Nasi Goreng',
+    description:
+        'Nasi yang digoreng dengan kecap, bawang, dan cabai, sering ditambah telur atau ayam. Gurih, sedikit manis, dan aromanya khas.',
+    price: 15000,
+    category: MenuCategory.nasi,
+    imageUrl: 'assets/images/product/nasgor.png',
+  ),
+
+  // ── Sayur ─────────────────────────────────────────────────────────────────
+  MenuModel(
+    id: '5',
+    name: 'Tempe Orek',
+    description:
+        'Tempe yang ditumis dengan bumbu kecap manis, bawang, dan cabai hingga kering. Rasanya manis, gurih, dan sedikit pedas.',
+    price: 9000,
+    category: MenuCategory.sayur,
+    imageUrl: 'assets/images/product/tempeorek.png',
+  ),
+  // ── Minuman ────────────────────────────────────────────────────────────────
+  MenuModel(
+    id: '9',
+    name: 'Es Teh',
+    description:
+        'Minuman dingin yang terbuat dari teh manis dan es batu. Rasanya manis dan segar.',
+    price: 5000,
+    category: MenuCategory.minuman,
+    imageUrl: 'assets/images/product/esteh.png',
+  ),
+  MenuModel(
+    id: '10',
+    name: 'Air Mineral',
+    description:
+        'Air mineral dalam kemasan botol, cocok untuk melepas dahaga. Rasanya segar dan netral.',
+    price: 3000,
+    category: MenuCategory.minuman,
+    imageUrl: 'assets/images/product/air.png',
   ),
 ];
 
-final List<ProductModel> topOfWeekMenu = [
-  ProductModel(
-    id: '5',
-    menuName: "Tempe Orek",
-    description:
-        'Tempe Orek adalah tempe yang ditumis dengan bumbu kecap manis, bawang, dan cabai hingga kering atau sedikit basah. Rasanya manis, gurih, dan sedikit pedas, cocok sebagai lauk sederhana dengan nasi hangat.',
-    price: 9000,
-    image: 'assets/images/product/tempeorek.png',
-    category: 'sweet',
-  ),
-  ProductModel(
-    id: '6',
-    menuName: "Sambel Ati",
-    description:
-        'Sambel Ati adalah sambal yang terbuat dari ati ampela, cabai, dan bumbu lainnya. Rasanya pedas, gurih, dan cocok disantap dengan nasi hangat.',
-    price: 10000,
-    image: 'assets/images/product/sambelati.png',
-    category: 'spicy',
-  ),
-  ProductModel(
-    id: '7',
-    menuName: "Telor Balado",
-    description:
-        'Telor Balado adalah telur yang dimasak dengan sambal pedas. Rasanya pedas, gurih, dan cocok disantap dengan nasi hangat.',
-    price: 7000,
-    image: 'assets/images/product/telorbalado.png',
-    category: 'spicy',
-  ),
-  ProductModel(
-    id: '8',
-    menuName: "Nasi Goreng",
-    description:
-        'Nasi Goreng adalah nasi yang digoreng dengan bumbu seperti kecap, bawang, dan cabai, sering ditambah telur, ayam, atau sayuran. Rasanya gurih, sedikit manis, dan aromanya khas, cocok disantap kapan saja.',
-    price: 15000,
-    image: 'assets/images/product/nasgor.png',
-    category: 'sweet',
-  ),
-];
-
-final List<ProductModel> allMenu = [
-  ProductModel(
-    id: '1',
-    menuName: "Ayam Kalio",
-    description:
-        'Ayam Kalio adalah hidangan ayam yang disajikan dalam ketupan kacang-kacangan.',
-    price: 16000,
-    image: 'assets/images/product/ayamkalio.png',
-    category: 'recommended',
-  ),
-  ProductModel(
-    id: '2',
-    menuName: "Cumi Cabe Ijo",
-    description:
-        'Cumi Cabe Ijo adalah cumi segar yang ditumis dengan cabai hijau pedas, bawang, dan bumbu gurih. Rasanya pedas, gurih, dan cocok disantap dengan nasi hangat.',
-    price: 15000,
-    image: 'assets/images/product/cumicabeijo.png',
-    category: 'recommended',
-  ),
-  ProductModel(
-    id: '3',
-    menuName: "Mujair Cabe Ijo",
-    description:
-        'Mujair Cabe Ijo adalah ikan mujair goreng atau digoreng setengah kering yang dimasak dengan sambal cabai hijau. Rasanya pedas, gurih, dan segar, cocok disantap dengan nasi hangat.',
-    price: 20000,
-    image: 'assets/images/product/mujaircabeijo.png',
-    category: 'recommended',
-  ),
-  ProductModel(
-    id: '4',
-    menuName: "Sop Buntut",
-    description:
-        'Sop Buntut adalah sup berbahan buntut sapi yang dimasak lama hingga empuk, disajikan dengan kuah kaldu bening yang gurih, sayuran seperti wortel dan kentang, serta aroma rempah yang hangat. Rasanya kaya, lembut, dan cocok disantap saat hangat.',
-    price: 28000,
-    image: 'assets/images/product/sopbuntut.png',
-    category: 'recommended',
-  ),
-  ProductModel(
-    id: '5',
-    menuName: "Tempe Orek",
-    description:
-        'Tempe Orek adalah tempe yang ditumis dengan bumbu kecap manis, bawang, dan cabai hingga kering atau sedikit basah. Rasanya manis, gurih, dan sedikit pedas, cocok sebagai lauk sederhana dengan nasi hangat.',
-    price: 9000,
-    image: 'assets/images/product/tempeorek.png',
-    category: 'sweet',
-  ),
-  ProductModel(
-    id: '6',
-    menuName: "Sambel Ati",
-    description:
-        'Sambel Ati adalah sambal yang terbuat dari ati ampela, cabai, dan bumbu lainnya. Rasanya pedas, gurih, dan cocok disantap dengan nasi hangat.',
-    price: 10000,
-    image: 'assets/images/product/sambelati.png',
-    category: 'spicy',
-  ),
-  ProductModel(
-    id: '7',
-    menuName: "Telor Balado",
-    description:
-        'Telor Balado adalah telur yang dimasak dengan sambal pedas. Rasanya pedas, gurih, dan cocok disantap dengan nasi hangat.',
-    price: 7000,
-    image: 'assets/images/product/telorbalado.png',
-    category: 'spicy',
-  ),
-  ProductModel(
-    id: '8',
-    menuName: "Nasi Goreng",
-    description:
-        'Nasi Goreng adalah nasi yang digoreng dengan bumbu seperti kecap, bawang, dan cabai, sering ditambah telur, ayam, atau sayuran. Rasanya gurih, sedikit manis, dan aromanya khas, cocok disantap kapan saja.',
-    price: 15000,
-    image: 'assets/images/product/nasgor.png',
-    category: 'sweet',
-  ),
-];
+// Helper: filter berdasarkan kategori
+List<MenuModel> menuByCategory(MenuCategory cat) =>
+    initialMenus.where((m) => m.category == cat).toList();

@@ -7,9 +7,14 @@ import 'package:warteg_app/config/supabase_config.dart';
 import 'package:warteg_app/controller/auth_controller.dart';
 import 'package:warteg_app/screen/home.dart';
 import 'package:warteg_app/screen/welcome_page.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('id', null);
 
   await Supabase.initialize(
     url: SupabaseConfig.url,
@@ -20,7 +25,7 @@ void main() async {
   final bool isLogin = prefs.getBool("isLogin") ?? false;
   final String username = prefs.getString("username") ?? "Guest";
   final String email = prefs.getString("email") ?? "";
-  final String role = prefs.getString("role") ?? "user"; // ← tambah ini
+  final String role = prefs.getString("role") ?? "user";
 
   final container = ProviderContainer();
 
@@ -47,6 +52,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
 

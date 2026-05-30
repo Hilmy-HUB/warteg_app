@@ -1,8 +1,9 @@
 enum OrderStatusModel {
   bayar,
+  tungguKonfirmasi, // ← BARU: setelah bayar VA / langsung untuk COD & digital
   diproses,
-  dijemput,
   diantar,
   selesai,
   dibatalkan,
 }
+ 

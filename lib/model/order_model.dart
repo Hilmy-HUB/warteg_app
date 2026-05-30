@@ -1,5 +1,6 @@
 import 'package:warteg_app/model/address_model.dart';
 import 'package:warteg_app/model/cart_item_model.dart';
+import 'package:warteg_app/model/driver_mode.dart';
 import 'package:warteg_app/model/order_status_model.dart';
 import 'package:warteg_app/model/payment_method.model.dart';
 
@@ -17,6 +18,8 @@ class OrderModel {
   final String? vaNumber;
   final DateTime expiredAt;
   final DateTime? cancelExpiredAt;
+  final bool acceptedByAdmin;
+  final DriverModel? driver;
 
   OrderModel({
     required this.id,
@@ -32,6 +35,9 @@ class OrderModel {
     required this.expiredAt,
     required this.vaNumber,
     this.cancelExpiredAt,
+    this.acceptedByAdmin = false,
+    this.driver,
+    
   });
 
   OrderModel copyWith({
@@ -48,6 +54,8 @@ class OrderModel {
     String? vaNumber,
     DateTime? expiredAt,
     DateTime? cancelExpiredAt,
+    bool? acceptedByAdmin,
+    DriverModel? driver,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -63,6 +71,8 @@ class OrderModel {
       vaNumber: vaNumber ?? this.vaNumber,
       expiredAt: expiredAt ?? this.expiredAt,
       cancelExpiredAt: cancelExpiredAt ?? this.cancelExpiredAt,
+      acceptedByAdmin: acceptedByAdmin ?? this.acceptedByAdmin,
+      driver: driver ?? this.driver,
     );
   }
 
@@ -87,6 +97,8 @@ class OrderModel {
       'vaNumber': vaNumber,
       'expiredAt': expiredAt.toIso8601String(),
       'cancelExpiredAt': cancelExpiredAt?.toIso8601String(),
+      'acceptedByAdmin': acceptedByAdmin,
+      'driver': driver?.toJson(),
     };
   }
 
@@ -116,6 +128,10 @@ class OrderModel {
       expiredAt: DateTime.parse(json['expiredAt']),
       cancelExpiredAt: json['cancelExpiredAt'] != null
           ? DateTime.parse(json['cancelExpiredAt'])
+          : null,
+      acceptedByAdmin: json['acceptedByAdmin'] as bool? ?? false,
+      driver: json['driver'] != null
+          ? DriverModel.fromJson(json['driver'])
           : null,
     );
   }

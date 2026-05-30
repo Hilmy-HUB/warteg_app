@@ -62,6 +62,16 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
     state = state.copyWith(selectedPromo: promo);
   }
 
+  // tambahkan method ini di dalam CheckoutNotifier
+  void clearPromo() {
+    state = CheckoutState(
+      items: state.items,
+      selectedAddress: state.selectedAddress,
+      paymentMethod: state.paymentMethod,
+      // selectedPromo dikosongkan
+    );
+  }
+
   void selectPayment(PaymentMethodModel method) {
     state = state.copyWith(paymentMethod: method);
   }

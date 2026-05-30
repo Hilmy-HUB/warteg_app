@@ -20,16 +20,16 @@ class NotificationPage extends ConsumerWidget {
   OrderStatusModel getTargetTab(String title) {
     final lower = title.toLowerCase();
 
-    if (lower.contains('dibatalkan')) {
-      return OrderStatusModel.dibatalkan;
+    if (lower.contains('pembayaran')) {
+      return OrderStatusModel.tungguKonfirmasi;
+    }
+
+    if (lower.contains('konfirmasi')) {
+      return OrderStatusModel.tungguKonfirmasi;
     }
 
     if (lower.contains('diproses')) {
       return OrderStatusModel.diproses;
-    }
-
-    if (lower.contains('dijemput')) {
-      return OrderStatusModel.dijemput;
     }
 
     if (lower.contains('diantar')) {
@@ -38,6 +38,10 @@ class NotificationPage extends ConsumerWidget {
 
     if (lower.contains('selesai')) {
       return OrderStatusModel.selesai;
+    }
+
+    if (lower.contains('dibatalkan')) {
+      return OrderStatusModel.dibatalkan;
     }
 
     return OrderStatusModel.bayar;
@@ -102,13 +106,10 @@ class NotificationPage extends ConsumerWidget {
                   onTap: () {
                     if (notif.title.contains('Pembayaran')) {
                       ref.read(orderTabProvider.notifier).state =
-                          OrderStatusModel.diproses;
+                          OrderStatusModel.tungguKonfirmasi;
                     } else if (notif.title.contains('Dibatalkan')) {
                       ref.read(orderTabProvider.notifier).state =
                           OrderStatusModel.dibatalkan;
-                    } else if (notif.title.contains('Dijemput')) {
-                      ref.read(orderTabProvider.notifier).state =
-                          OrderStatusModel.dijemput;
                     } else if (notif.title.contains('Diantar')) {
                       ref.read(orderTabProvider.notifier).state =
                           OrderStatusModel.diantar;

@@ -7,6 +7,7 @@ import 'package:warteg_app/model/order_status_model.dart';
 import 'package:warteg_app/provider/notification_provider.dart';
 import 'package:warteg_app/provider/order_provider.dart';
 import 'package:warteg_app/provider/order_tab_provider.dart';
+import 'package:warteg_app/screen/driver_tracking_page.dart';
 import 'package:warteg_app/screen/invoice_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 
@@ -21,10 +22,17 @@ class OrderPage extends ConsumerStatefulWidget {
 class _OrderPageState extends ConsumerState<OrderPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
   Timer? timer;
 
-  final List<OrderStatusModel> tabs = OrderStatusModel.values;
+  // ← Tab baru: tungguKonfirmasi disisipkan di index 1
+  final List<OrderStatusModel> tabs = const [
+    OrderStatusModel.bayar,
+    OrderStatusModel.tungguKonfirmasi,
+    OrderStatusModel.diproses,
+    OrderStatusModel.diantar,
+    OrderStatusModel.selesai,
+    OrderStatusModel.dibatalkan,
+  ];
 
   @override
   void initState() {
@@ -36,13 +44,17 @@ class _OrderPageState extends ConsumerState<OrderPage>
     _tabController = TabController(
       length: tabs.length,
       vsync: this,
-      initialIndex: initialIndex,
+      initialIndex: initialIndex >= 0 ? initialIndex : 0,
     );
-    
-    timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() {});
+
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        ref.read(orderTabProvider.notifier).state = tabs[_tabController.index];
       }
+    });
+
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
     });
   }
 
@@ -56,27 +68,20 @@ class _OrderPageState extends ConsumerState<OrderPage>
   List<OrderModel> getOrdersByStatus(
     List<OrderModel> allOrders,
     OrderStatusModel status,
-  ) {
-    return allOrders.where((order) => order.status == status).toList();
-  }
+  ) => allOrders.where((o) => o.status == status).toList();
 
   Color getStatusColor(OrderStatusModel status) {
     switch (status) {
       case OrderStatusModel.bayar:
         return Colors.orange;
-
+      case OrderStatusModel.tungguKonfirmasi:
+        return const Color(0xFF8B5CF6); // ungu
       case OrderStatusModel.diproses:
         return Colors.blue;
-
-      case OrderStatusModel.dijemput:
-        return Colors.purple;
-
       case OrderStatusModel.diantar:
         return Colors.indigo;
-
       case OrderStatusModel.selesai:
         return Colors.green;
-
       case OrderStatusModel.dibatalkan:
         return Colors.red;
     }
@@ -85,45 +90,38 @@ class _OrderPageState extends ConsumerState<OrderPage>
   String formatRupiah(int amount) {
     final s = amount.toString();
     final buf = StringBuffer();
-
     final mod = s.length % 3;
-
     for (int i = 0; i < s.length; i++) {
-      if (i != 0 && (i - mod) % 3 == 0) {
-        buf.write('.');
-      }
-
+      if (i != 0 && (i - mod) % 3 == 0) buf.write('.');
       buf.write(s[i]);
     }
-
     return buf.toString();
   }
 
+  // ── COD cancel helpers ───────────────────────────────────────────────────
+
   bool canCancelCOD(OrderModel order) {
     if (order.paymentMethod.name != "COD") return false;
-
-    if (order.status != OrderStatusModel.diproses) return false;
-
+    if (order.status != OrderStatusModel.tungguKonfirmasi) return false;
     if (order.cancelExpiredAt == null) return false;
-
     return DateTime.now().isBefore(order.cancelExpiredAt!);
   }
 
   String getRemainingCancelTime(OrderModel order) {
     if (order.cancelExpiredAt == null) return "00:00";
-
     final diff = order.cancelExpiredAt!.difference(DateTime.now());
-
     if (diff.isNegative) return "00:00";
-
     final minutes = diff.inMinutes.toString().padLeft(2, '0');
-
     final seconds = (diff.inSeconds % 60).toString().padLeft(2, '0');
-
     return "$minutes:$seconds";
   }
 
+  // ── Order Card ───────────────────────────────────────────────────────────
+
   Widget buildOrderCard(OrderModel order) {
+    final isTunggu = order.status == OrderStatusModel.tungguKonfirmasi;
+    final isDiantar = order.status == OrderStatusModel.diantar;
+
     return GestureDetector(
       onTap: () {
         if (order.status == OrderStatusModel.bayar) {
@@ -133,6 +131,11 @@ class _OrderPageState extends ConsumerState<OrderPage>
               builder: (_) =>
                   InvoicePage(order: order, vaNumber: order.vaNumber),
             ),
+          );
+        } else if (isDiantar && order.driver != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => DriverTrackingPage(order: order)),
           );
         }
       },
@@ -152,6 +155,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
         ),
         child: Column(
           children: [
+            // Status strip
             Container(
               height: 5,
               width: double.infinity,
@@ -160,9 +164,9 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-
             const SizedBox(height: 16),
 
+            // Header
             Row(
               children: [
                 Expanded(
@@ -175,7 +179,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
                     ),
                   ),
                 ),
-
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -200,106 +203,99 @@ class _OrderPageState extends ConsumerState<OrderPage>
 
             const SizedBox(height: 18),
 
-            Column(
-              children: order.items.map((item) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(18),
-                        child: Image.network(
-                          item.image,
-                          width: 74,
-                          height: 74,
-                          fit: BoxFit.cover,
-                        ),
+            // Items
+            ...order.items.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: Image.network(
+                        item.image,
+                        width: 74,
+                        height: 74,
+                        fit: BoxFit.cover,
                       ),
-
-                      const SizedBox(width: 14),
-
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.menuName,
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.menuName,
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
                             ),
-
-                            const SizedBox(height: 5),
-
-                            Text(
-                              '${item.quantity} x Rp ${formatRupiah(item.hargaSatuan)}',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            '${item.quantity} x Rp ${formatRupiah(item.hargaSatuan)}',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
                             ),
-
-                            if (item.addOns.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Wrap(
-                                  spacing: 6,
-                                  runSpacing: 6,
-                                  children: item.addOns
-                                      .map(
-                                        (e) => Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 9,
-                                            vertical: 5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: ColorTheme.buttonPrimary
-                                                .withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              30,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            '+ $e',
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              fontFamily: 'Poppins',
-                                              color: ColorTheme.buttonPrimary,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                          ),
+                          if (item.addOns.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: item.addOns
+                                    .map(
+                                      (e) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 9,
+                                          vertical: 5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: ColorTheme.buttonPrimary
+                                              .withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            30,
                                           ),
                                         ),
-                                      )
-                                      .toList(),
-                                ),
+                                        child: Text(
+                                          '+ $e',
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontFamily: 'Poppins',
+                                            color: ColorTheme.buttonPrimary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
                               ),
-                          ],
-                        ),
+                            ),
+                        ],
                       ),
-
-                      const SizedBox(width: 8),
-
-                      Text(
-                        'Rp ${formatRupiah(item.totalHarga)}',
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.bold,
-                          color: ColorTheme.buttonPrimary,
-                          fontSize: 13,
-                        ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Rp ${formatRupiah(item.totalHarga)}',
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold,
+                        color: ColorTheme.buttonPrimary,
+                        fontSize: 13,
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                    ),
+                  ],
+                ),
+              ),
             ),
 
             const Divider(height: 30),
 
+            // Address & payment info
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -315,9 +311,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                         color: Colors.grey.shade600,
                         size: 18,
                       ),
-
                       const SizedBox(width: 8),
-
                       const Text(
                         'Alamat',
                         style: TextStyle(
@@ -326,9 +320,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                           color: Colors.grey,
                         ),
                       ),
-
                       const Spacer(),
-
                       Expanded(
                         child: Text(
                           order.address.label,
@@ -342,9 +334,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 14),
-
                   Row(
                     children: [
                       Icon(
@@ -352,9 +342,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                         color: Colors.grey.shade600,
                         size: 18,
                       ),
-
                       const SizedBox(width: 8),
-
                       const Text(
                         'Pembayaran',
                         style: TextStyle(
@@ -363,9 +351,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                           color: Colors.grey,
                         ),
                       ),
-
                       const Spacer(),
-
                       Text(
                         order.paymentMethod.name,
                         style: const TextStyle(
@@ -382,6 +368,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
 
             const SizedBox(height: 18),
 
+            // Total
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
@@ -398,9 +385,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                       color: Colors.grey,
                     ),
                   ),
-
                   const Spacer(),
-
                   Text(
                     'Rp ${formatRupiah(order.total)}',
                     style: const TextStyle(
@@ -414,12 +399,9 @@ class _OrderPageState extends ConsumerState<OrderPage>
               ),
             ),
 
-            // =========================
-            // VA PAYMENT
-            // =========================
+            // ── Bayar VA ────────────────────────────────────
             if (order.status == OrderStatusModel.bayar) ...[
               const SizedBox(height: 18),
-
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -429,9 +411,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 child: Row(
                   children: [
                     const Icon(Icons.info_outline, color: Colors.red),
-
                     const SizedBox(width: 10),
-
                     Expanded(
                       child: Text(
                         'Silakan selesaikan pembayaran virtual account',
@@ -445,9 +425,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                   ],
                 ),
               ),
-
               const SizedBox(height: 18),
-
               SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -455,19 +433,26 @@ class _OrderPageState extends ConsumerState<OrderPage>
                   onPressed: () {
                     ref
                         .read(orderProvider.notifier)
-                        .updateOrderStatus(order.id, OrderStatusModel.diproses);
+                        .updateOrderStatus(
+                          order.id,
+                          OrderStatusModel.tungguKonfirmasi,
+                        );
 
                     ref
                         .read(notificationProvider.notifier)
                         .addNotification(
                           title: 'Pembayaran Berhasil',
                           message:
-                              'Pesanan #${order.id.substring(8)} sedang diproses',
+                              'Pesanan #${order.id.substring(8)} menunggu konfirmasi restoran.',
                           orderId: order.id,
                         );
 
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Pembayaran berhasil')),
+                      const SnackBar(
+                        content: Text(
+                          'Pembayaran berhasil! Menunggu konfirmasi restoran.',
+                        ),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -490,27 +475,25 @@ class _OrderPageState extends ConsumerState<OrderPage>
               ),
             ],
 
-            // =========================
-            // COD CANCEL
-            // =========================
-            if (canCancelCOD(order)) ...[
+            // ── Tunggu Konfirmasi ────────────────────────────
+            if (isTunggu) ...[
               const SizedBox(height: 18),
-
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.08),
+                  color: const Color(0xFF8B5CF6).withOpacity(0.08),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.timer_outlined, color: Colors.orange),
-
+                    const Icon(
+                      Icons.hourglass_top_rounded,
+                      color: Color(0xFF8B5CF6),
+                    ),
                     const SizedBox(width: 10),
-
                     Expanded(
                       child: Text(
-                        'Batalkan pesanan dalam ${getRemainingCancelTime(order)}',
+                        'Pesanan sedang menunggu konfirmasi dari restoran',
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 12,
@@ -522,222 +505,185 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 ),
               ),
 
+              // COD cancel timer
+              if (canCancelCOD(order)) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.timer_outlined, color: Colors.orange),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Batalkan pesanan dalam ${getRemainingCancelTime(order)}',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => _cancelCOD(order),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    child: const Text(
+                      'Batalkan Pesanan',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+
+            // ── Diantar: lihat detail driver ─────────────────
+            if (isDiantar) ...[
               const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.teal.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.delivery_dining_rounded,
+                      color: Colors.teal,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Pesanan sedang dalam perjalanan menuju lokasimu',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Driver mini-card
+              if (order.driver != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: Colors.indigo.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          color: Colors.indigo,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.person_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              order.driver!.name,
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              '${order.driver!.vehicleNumber} · ${order.driver!.vehicleType}',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.indigo,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
 
               SizedBox(
                 width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final firstConfirm = await showDialog<bool>(
-                      context: context,
-                      builder: (_) {
-                        return AlertDialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          title: const Text(
-                            'Batalkan Pesanan?',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          content: const Text(
-                            'Apakah kamu yakin ingin membatalkan pesanan ini?',
-                            style: TextStyle(fontFamily: 'Poppins'),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context, false);
-                              },
-                              child: const Text(
-                                'Tidak',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.pop(context, true);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                              ),
-                              child: const Text(
-                                'Ya',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontFamily: 'Poppins',
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-
-                    if (firstConfirm != true) return;
-
-                    final secondConfirm = await showDialog<bool>(
-                      context: context,
-                      builder: (_) {
-                        return AlertDialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          title: const Text(
-                            'Konfirmasi Terakhir',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          content: const Text(
-                            'Pesanan yang dibatalkan tidak dapat dikembalikan.',
-                            style: TextStyle(fontFamily: 'Poppins'),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context, false);
-                              },
-                              child: const Text(
-                                'Kembali',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.pop(context, true);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                              ),
-                              child: const Text(
-                                'Batalkan',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontFamily: 'Poppins',
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-
-                    if (secondConfirm != true) return;
-
-                    ref
-                        .read(orderProvider.notifier)
-                        .updateOrderStatus(
-                          order.id,
-                          OrderStatusModel.dibatalkan,
-                        );
-
-                    ref
-                        .read(notificationProvider.notifier)
-                        .addNotification(
-                          title: 'Pesanan Dibatalkan',
-                          message:
-                              'Pesanan #${order.id.substring(8)} berhasil dibatalkan',
-                          orderId: order.id,
-                        );
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Pesanan berhasil dibatalkan'),
-                      ),
-                    );
-
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (_) {
-                        Future.delayed(const Duration(milliseconds: 1400), () {
-                          if (mounted) {
-                            Navigator.pop(context);
-                          }
-                        });
-
-                        return Center(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: Container(
-                              width: 260,
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(28),
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 72,
-                                    height: 72,
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.withOpacity(0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close_rounded,
-                                      color: Colors.red,
-                                      size: 42,
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 18),
-
-                                  const Text(
-                                    'Pesanan Dibatalkan',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 8),
-
-                                  Text(
-                                    'Pesanan berhasil dibatalkan',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 13,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
+                height: 50,
+                child: ElevatedButton.icon(
+                  icon: const Icon(
+                    Icons.location_on_rounded,
+                    color: Colors.white,
+                    size: 18,
                   ),
-                  child: const Text(
-                    'Batalkan Pesanan',
+                  label: const Text(
+                    'Lihat Detail Pengantaran',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       fontSize: 14,
+                    ),
+                  ),
+                  onPressed: () {
+                    if (order.driver != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DriverTrackingPage(order: order),
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
                     ),
                   ),
                 ),
@@ -749,9 +695,106 @@ class _OrderPageState extends ConsumerState<OrderPage>
     );
   }
 
+  // ── COD Cancel Flow ──────────────────────────────────────────────────────
+
+  Future<void> _cancelCOD(OrderModel order) async {
+    final firstConfirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text(
+          'Batalkan Pesanan?',
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Apakah kamu yakin ingin membatalkan pesanan ini?',
+          style: TextStyle(fontFamily: 'Poppins'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Tidak',
+              style: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text(
+              'Ya',
+              style: TextStyle(color: Colors.white, fontFamily: 'Poppins'),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (firstConfirm != true) return;
+
+    final secondConfirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text(
+          'Konfirmasi Terakhir',
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Pesanan yang dibatalkan tidak dapat dikembalikan.',
+          style: TextStyle(fontFamily: 'Poppins'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Kembali',
+              style: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text(
+              'Batalkan',
+              style: TextStyle(color: Colors.white, fontFamily: 'Poppins'),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (secondConfirm != true) return;
+
+    ref
+        .read(orderProvider.notifier)
+        .updateOrderStatus(order.id, OrderStatusModel.dibatalkan);
+
+    ref.listenManual<OrderStatusModel>(orderTabProvider, (previous, next) {
+      final index = tabs.indexOf(next);
+
+      if (index != -1 && _tabController.index != index) {
+        _tabController.animateTo(index);
+      }
+    });
+
+    ref
+        .read(notificationProvider.notifier)
+        .addNotification(
+          title: 'Pesanan Dibatalkan',
+          message: 'Pesanan #${order.id.substring(8)} berhasil dibatalkan',
+          orderId: order.id,
+        );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pesanan berhasil dibatalkan')),
+      );
+    }
+  }
+
+  // ── Tab Content ──────────────────────────────────────────────────────────
+
   Widget buildTabContent(OrderStatusModel status) {
     final allOrders = ref.watch(orderProvider);
-
     final orders = getOrdersByStatus(allOrders, status);
 
     if (orders.isEmpty) {
@@ -777,9 +820,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 color: Colors.grey.shade300,
               ),
             ),
-
             const SizedBox(height: 18),
-
             const Text(
               'Belum ada pesanan',
               style: TextStyle(
@@ -789,9 +830,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 color: Colors.black87,
               ),
             ),
-
             const SizedBox(height: 6),
-
             Text(
               'Pesanan kamu akan muncul di sini',
               style: TextStyle(
@@ -808,9 +847,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 70),
       itemCount: orders.length,
-      itemBuilder: (_, index) {
-        return buildOrderCard(orders[index]);
-      },
+      itemBuilder: (_, index) => buildOrderCard(orders[index]),
     );
   }
 
@@ -832,15 +869,15 @@ class _OrderPageState extends ConsumerState<OrderPage>
           ),
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(95),
+          preferredSize: const Size.fromHeight(70),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: Container(
-              height: 58,
-              padding: const EdgeInsets.all(6),
+              height: 52,
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: TabBar(
                 tabAlignment: TabAlignment.start,
@@ -848,10 +885,10 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 isScrollable: true,
                 dividerColor: Colors.transparent,
                 indicatorSize: TabBarIndicatorSize.tab,
-                splashBorderRadius: BorderRadius.circular(18),
+                splashBorderRadius: BorderRadius.circular(16),
                 indicator: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.06),
@@ -865,20 +902,22 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 labelStyle: const TextStyle(
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.bold,
-                  fontSize: 13,
+                  fontSize: 12.5,
                 ),
                 unselectedLabelStyle: const TextStyle(
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.w500,
-                  fontSize: 13,
+                  fontSize: 12.5,
                 ),
-                labelPadding: const EdgeInsets.symmetric(horizontal: 18),
-                tabs: tabs.map((e) {
-                  return SizedBox(
-                    height: 46,
-                    child: Center(child: Text(e.label)),
-                  );
-                }).toList(),
+                labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+                tabs: tabs
+                    .map(
+                      (e) => SizedBox(
+                        height: 42,
+                        child: Center(child: Text(e.label)),
+                      ),
+                    )
+                    .toList(),
               ),
             ),
           ),
@@ -886,14 +925,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          buildTabContent(OrderStatusModel.bayar),
-          buildTabContent(OrderStatusModel.diproses),
-          buildTabContent(OrderStatusModel.dijemput),
-          buildTabContent(OrderStatusModel.diantar),
-          buildTabContent(OrderStatusModel.selesai),
-          buildTabContent(OrderStatusModel.dibatalkan),
-        ],
+        children: tabs.map((s) => buildTabContent(s)).toList(),
       ),
     );
   }
