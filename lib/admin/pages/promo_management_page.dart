@@ -62,15 +62,20 @@ class PromoManagementPage extends ConsumerWidget {
                     onTap: () => _showPromoForm(context, ref),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.add_rounded,
-                              color: Colors.white, size: 16),
+                          Icon(
+                            Icons.add_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'Tambah',
@@ -103,8 +108,11 @@ class PromoManagementPage extends ConsumerWidget {
                               color: Colors.grey.shade100,
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(Icons.local_offer_outlined,
-                                size: 38, color: Colors.grey.shade300),
+                            child: Icon(
+                              Icons.local_offer_outlined,
+                              size: 38,
+                              color: Colors.grey.shade300,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           const Text(
@@ -131,9 +139,10 @@ class PromoManagementPage extends ConsumerWidget {
   }
 
   void _showPromoForm(BuildContext context, WidgetRef ref) {
-    final codeC     = TextEditingController();
-    final titleC    = TextEditingController();
+    final codeC = TextEditingController();
+    final titleC = TextEditingController();
     final discountC = TextEditingController();
+    final minPurchaseC = TextEditingController();
     bool freeShipping = false;
 
     showModalBottomSheet(
@@ -141,11 +150,14 @@ class PromoManagementPage extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => Padding(
           padding: EdgeInsets.only(
-            left: 20, right: 20, top: 20,
+            left: 20,
+            right: 20,
+            top: 20,
             bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
           ),
           child: Column(
@@ -155,11 +167,13 @@ class PromoManagementPage extends ConsumerWidget {
               // Handle bar
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(2)),
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
 
@@ -181,10 +195,19 @@ class PromoManagementPage extends ConsumerWidget {
 
               // Diskon % — disable kalau freeShipping
               _field(
-                discountC, 'Diskon (%)',
+                discountC,
+                'Diskon (%)',
                 hint: '0–100',
                 keyboard: TextInputType.number,
                 enabled: !freeShipping,
+              ),
+              const SizedBox(height: 12), 
+             
+              _field(
+                minPurchaseC,
+                'Minimal Pembelian (Rp)',
+                hint: 'contoh: 20000',
+                keyboard: TextInputType.number,
               ),
               const SizedBox(height: 4),
 
@@ -216,24 +239,33 @@ class PromoManagementPage extends ConsumerWidget {
                           color: ColorTheme.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.local_shipping_rounded,
-                            color: ColorTheme.primaryColor, size: 18),
+                        child: const Icon(
+                          Icons.local_shipping_rounded,
+                          color: ColorTheme.primaryColor,
+                          size: 18,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Gratis Ongkir',
-                                style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13)),
-                            Text('Aktifkan untuk promo bebas ongkos kirim',
-                                style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 11,
-                                    color: Colors.grey)),
+                            Text(
+                              'Gratis Ongkir',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              'Aktifkan untuk promo bebas ongkos kirim',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -259,22 +291,26 @@ class PromoManagementPage extends ConsumerWidget {
                     backgroundColor: ColorTheme.primaryColor,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   onPressed: () {
-                    final code  = codeC.text.trim().toUpperCase();
+                    final code = codeC.text.trim().toUpperCase();
                     final title = titleC.text.trim();
-                    final pct   = int.tryParse(discountC.text.trim()) ?? 0;
+                    final pct = int.tryParse(discountC.text.trim()) ?? 0;
 
                     if (code.isEmpty || title.isEmpty) {
                       ScaffoldMessenger.of(ctx).showSnackBar(
                         SnackBar(
-                          content: const Text('Kode dan judul tidak boleh kosong',
-                              style: TextStyle(fontFamily: 'Poppins')),
+                          content: const Text(
+                            'Kode dan judul tidak boleh kosong',
+                            style: TextStyle(fontFamily: 'Poppins'),
+                          ),
                           backgroundColor: Colors.redAccent,
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                         ),
                       );
@@ -283,28 +319,34 @@ class PromoManagementPage extends ConsumerWidget {
 
                     // Cek duplikat kode
                     final existing = ref.read(promoProvider);
-                    if (existing.any((p) =>
-                        p.code.toUpperCase() == code)) {
+                    if (existing.any((p) => p.code.toUpperCase() == code)) {
                       ScaffoldMessenger.of(ctx).showSnackBar(
                         SnackBar(
-                          content: const Text('Kode promo sudah ada',
-                              style: TextStyle(fontFamily: 'Poppins')),
+                          content: const Text(
+                            'Kode promo sudah ada',
+                            style: TextStyle(fontFamily: 'Poppins'),
+                          ),
                           backgroundColor: Colors.orange,
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                         ),
                       );
                       return;
                     }
 
-                    ref.read(promoProvider.notifier).addPromo(PromoModel(
-                          code: code,
-                          title: title,
-                          discountPercent: freeShipping ? 0 : pct,
-                          freeShipping: freeShipping,
-                        ));
+                    ref
+                        .read(promoProvider.notifier)
+                        .addPromo(
+                          PromoModel(
+                            code: code,
+                            title: title,
+                            discountPercent: freeShipping ? 0 : pct,
+                            freeShipping: freeShipping,
+                          ),
+                        );
                     Navigator.pop(ctx);
                   },
                   child: const Text(
@@ -331,40 +373,41 @@ class PromoManagementPage extends ConsumerWidget {
     String? hint,
     TextInputType keyboard = TextInputType.text,
     bool enabled = true,
-  }) =>
-      TextField(
-        controller: c,
-        keyboardType: keyboard,
-        enabled: enabled,
-        style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          labelStyle:
-              const TextStyle(fontFamily: 'Poppins', fontSize: 13),
-          hintStyle: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 12,
-              color: Colors.grey.shade400),
-          border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.grey.shade200)),
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.grey.shade200)),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: ColorTheme.primaryColor)),
-          disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.grey.shade100)),
-          filled: true,
-          fillColor:
-              enabled ? ColorTheme.backgroundColor : Colors.grey.shade50,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        ),
-      );
+  }) => TextField(
+    controller: c,
+    keyboardType: keyboard,
+    enabled: enabled,
+    style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
+    decoration: InputDecoration(
+      labelText: label,
+      hintText: hint,
+      labelStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
+      hintStyle: TextStyle(
+        fontFamily: 'Poppins',
+        fontSize: 12,
+        color: Colors.grey.shade400,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.grey.shade200),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.grey.shade200),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: ColorTheme.primaryColor),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.grey.shade100),
+      ),
+      filled: true,
+      fillColor: enabled ? ColorTheme.backgroundColor : Colors.grey.shade50,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────
@@ -391,9 +434,10 @@ class _PromoCard extends ConsumerWidget {
         ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3)),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
         ],
       ),
       child: Padding(
@@ -411,11 +455,13 @@ class _PromoCard extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
               child: promo.freeShipping
-                  ? Icon(Icons.local_shipping_rounded,
+                  ? Icon(
+                      Icons.local_shipping_rounded,
                       color: promo.isActive
                           ? ColorTheme.primaryColor
                           : Colors.grey.shade400,
-                      size: 22)
+                      size: 22,
+                    )
                   : Center(
                       child: Text(
                         '${promo.discountPercent}%',
@@ -453,7 +499,9 @@ class _PromoCard extends ConsumerWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: promo.isActive
                               ? ColorTheme.primaryColor.withOpacity(0.08)
@@ -477,7 +525,9 @@ class _PromoCard extends ConsumerWidget {
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.blue.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(20),
@@ -516,8 +566,11 @@ class _PromoCard extends ConsumerWidget {
                       color: Colors.red.shade50,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.delete_outline_rounded,
-                        color: Colors.redAccent, size: 16),
+                    child: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: Colors.redAccent,
+                      size: 16,
+                    ),
                   ),
                 ),
               ],
@@ -532,35 +585,46 @@ class _PromoCard extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Hapus Promo',
-            style: TextStyle(
-                fontFamily: 'Poppins', fontWeight: FontWeight.w800)),
-        content: Text('Hapus promo "${promo.title}"?',
-            style: const TextStyle(fontFamily: 'Poppins')),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Hapus Promo',
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          'Hapus promo "${promo.title}"?',
+          style: const TextStyle(fontFamily: 'Poppins'),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Batal',
-                style: TextStyle(
-                    fontFamily: 'Poppins', color: Colors.grey.shade500)),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                color: Colors.grey.shade500,
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12))),
+              backgroundColor: Colors.redAccent,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             onPressed: () {
               notifier.deletePromo(promo.code);
               Navigator.pop(ctx);
             },
-            child: const Text('Hapus',
-                style: TextStyle(
-                    fontFamily: 'Poppins',
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700)),
+            child: const Text(
+              'Hapus',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),

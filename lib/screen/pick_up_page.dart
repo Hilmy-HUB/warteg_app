@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:warteg_app/extension/order_status_extension.dart';
 import 'package:warteg_app/model/order_model.dart';
 import 'package:warteg_app/model/order_status_model.dart';
+import 'package:warteg_app/provider/chat_provider.dart';
 import 'package:warteg_app/provider/order_provider.dart';
 import 'package:warteg_app/screen/invoice_page.dart';
+import 'package:warteg_app/screen/user_chat_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 
 class PickupPage extends ConsumerStatefulWidget {
@@ -44,6 +47,70 @@ class _PickupPageState extends ConsumerState<PickupPage>
     final minutes = diff.inMinutes.toString().padLeft(2, '0');
     final seconds = (diff.inSeconds % 60).toString().padLeft(2, '0');
     return "$minutes:$seconds";
+  }
+
+  void _showChatOrderPicker(BuildContext context, List<OrderModel> orders) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Pilih Pesanan',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...orders.map(
+            (o) => ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: ColorTheme.buttonPrimary,
+                child: Icon(
+                  Icons.receipt_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              title: Text(
+                'Order #${o.id.substring(8)}',
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: Text(
+                o.status.label,
+                style: const TextStyle(fontFamily: 'Poppins', fontSize: 12),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => UserChatPage(order: o)),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
   }
 
   Future<void> _cancelCOD(OrderModel order) async {
@@ -384,6 +451,46 @@ class _PickupPageState extends ConsumerState<PickupPage>
                                       ),
                                     )
                                     .toList(),
+                              ),
+                            ),
+                          if (item.notes != null && item.notes!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: Colors.amber.withOpacity(0.25),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(
+                                      Icons.sticky_note_2_outlined,
+                                      size: 13,
+                                      color: Colors.amber,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        item.notes!,
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 11,
+                                          fontStyle: FontStyle.italic,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                         ],
@@ -900,6 +1007,99 @@ class _PickupPageState extends ConsumerState<PickupPage>
             fontSize: 20,
           ),
         ),
+        actions: [
+          // Tombol chat — tap buka list order yang bisa dichat
+          // (hanya tampil jika ada order aktif)
+          Consumer(
+            builder: (_, ref, __) {
+              final orders = ref
+                  .watch(orderProvider)
+                  .where((o) => o.deliveryType == 'delivery')
+                  .toList();
+              // Hitung total unread dari admin
+              final totalUnread = orders.fold<int>(
+                0,
+                (sum, o) => sum + ref.watch(unreadAdminCountProvider(o.id)),
+              );
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: GestureDetector(
+                  onTap: () {
+                    // Jika hanya 1 order aktif, langsung buka chat
+                    // Jika lebih dari 1, tampilkan bottom sheet pilihan
+                    final activeOrders = orders
+                        .where(
+                          (o) =>
+                              o.status != OrderStatusModel.selesai &&
+                              o.status != OrderStatusModel.dibatalkan,
+                        )
+                        .toList();
+                    if (activeOrders.length == 1) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              UserChatPage(order: activeOrders.first),
+                        ),
+                      );
+                    } else if (activeOrders.isNotEmpty) {
+                      _showChatOrderPicker(context, activeOrders);
+                    } else if (orders.isNotEmpty) {
+                      // Kalau semua selesai, buka order terakhir
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => UserChatPage(order: orders.last),
+                        ),
+                      );
+                    }
+                  },
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.chat_rounded,
+                          color: ColorTheme.buttonPrimary,
+                          size: 20,
+                        ),
+                      ),
+                      if (totalUnread > 0)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            width: 16,
+                            height: 16,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '$totalUnread',
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(70),
           child: Padding(

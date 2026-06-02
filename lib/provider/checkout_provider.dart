@@ -21,10 +21,7 @@ class CheckoutState {
 
   int get subtotal => items.fold(0, (sum, item) => sum + item.totalHarga);
 
-  int get ongkir {
-    if (deliveryType == 'pickup') return 0;
-    return selectedPromo?.freeShipping == true ? 0 : 10000;
-  }
+  int get ongkir => 0;
 
   int get promoDiscount {
     if (selectedPromo == null) return 0;
@@ -36,20 +33,26 @@ class CheckoutState {
   CheckoutState copyWith({
     List<CartItemModel>? items,
     AddressModel? selectedAddress,
-    PromoModel? selectedPromo,
     PaymentMethodModel? paymentMethod,
     String? deliveryType,
     bool clearAddress = false,
     bool clearPromo = false,
+    Object? selectedPromo = _sentinel,
   }) {
     return CheckoutState(
       items: items ?? this.items,
-      selectedAddress: clearAddress ? null : (selectedAddress ?? this.selectedAddress),
-      selectedPromo: clearPromo ? null : (selectedPromo ?? this.selectedPromo),
+      selectedAddress: clearAddress
+          ? null
+          : (selectedAddress ?? this.selectedAddress),
+      selectedPromo: selectedPromo == _sentinel
+          ? this.selectedPromo
+          : selectedPromo as PromoModel?,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       deliveryType: deliveryType ?? this.deliveryType,
     );
   }
+
+  static const _sentinel = Object();
 }
 
 class CheckoutNotifier extends StateNotifier<CheckoutState> {
@@ -70,7 +73,7 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
     state = state.copyWith(selectedAddress: address);
   }
 
-  void selectPromo(PromoModel promo) {
+  void selectPromo(PromoModel? promo) {
     state = state.copyWith(selectedPromo: promo);
   }
 
@@ -89,10 +92,7 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
 
   void setDeliveryType(String type) {
     // Kalau ganti ke pickup, clear alamat yang dipilih
-    state = state.copyWith(
-      deliveryType: type,
-      clearAddress: type == 'pickup',
-    );
+    state = state.copyWith(deliveryType: type, clearAddress: type == 'pickup');
   }
 
   void clearCheckout() {

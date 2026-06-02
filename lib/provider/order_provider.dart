@@ -14,16 +14,14 @@ class OrderNotifier extends StateNotifier<List<OrderModel>> {
     _loadFromPrefs(); // Load saat pertama kali init
   }
 
-   Future<void> _loadFromPrefs() async {
+  Future<void> _loadFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_ordersKey);
 
     if (raw != null) {
       final List decoded = jsonDecode(raw);
 
-      state = decoded
-          .map((e) => OrderModel.fromJson(e))
-          .toList();
+      state = decoded.map((e) => OrderModel.fromJson(e)).toList();
     }
 
     initialized = true;
@@ -135,8 +133,17 @@ class OrderNotifier extends StateNotifier<List<OrderModel>> {
 
     await _saveToPrefs();
   }
+
+  Future<void> updateSellerNote(String orderId, String note) async {
+    state = [
+      for (final order in state)
+        if (order.id == orderId) order.copyWith(sellerNote: note) else order,
+    ];
+    await _saveToPrefs();
+  }
 }
 
 final orderProvider = StateNotifierProvider<OrderNotifier, List<OrderModel>>(
   (ref) => OrderNotifier(),
 );
+

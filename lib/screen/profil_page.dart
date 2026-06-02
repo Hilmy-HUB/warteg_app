@@ -7,6 +7,8 @@ import 'package:warteg_app/screen/landing_page.dart';
 import 'package:warteg_app/screen/myaccount.dart';
 import 'package:warteg_app/screen/payment_page.dart';
 import 'package:warteg_app/screen/promo_page.dart';
+import 'package:warteg_app/screen/receipt_page.dart';
+import 'package:warteg_app/screen/statistic_page.dart';
 import 'package:warteg_app/screen/subscription_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 import 'package:warteg_app/provider/notification_provider.dart';
@@ -218,21 +220,36 @@ class ProfilPage extends ConsumerWidget {
                 ),
               ),
 
+              _buildMenuItem(
+                icon: Icons.receipt_long_rounded,
+                title: "Riwayat Pesanan",
+                subtitle: "Lihat seluruh transaksi yang pernah dilakukan",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ReceiptPage()),
+                  );
+                },
+              ),
+
+              _buildMenuItem(
+                icon: Icons.insights_rounded,
+                title: "Statistik Pembelian",
+                subtitle: "Lihat ringkasan aktivitas belanjamu",
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const PurchaseStatisticsPage(),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 10),
 
               // ==========================================
               // GENERAL SECTION
               // ==========================================
               _buildSectionTitle("General"),
-
-              _buildMenuItem(
-                icon: Icons.language_outlined,
-                title: "Bahasa",
-                subtitle: "Pilih bahasa yang Anda inginkan",
-                onTap: () {
-                  // Handle language selection
-                },
-              ),
 
               _buildMenuItem(
                 icon: Icons.help_outline_rounded,
@@ -265,17 +282,67 @@ class ProfilPage extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
 
                   onTap: () async {
-                    await ref.read(authServiceProvider).logout();
-
-                    ref.read(currentUserProvider.notifier).state = null;
-
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => LandingPage()),
-                      (route) => false,
+                    // Tampilkan dialog konfirmasi
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        title: const Text(
+                          "Keluar",
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        content: const Text(
+                          "Apakah Anda yakin ingin keluar dari akun ini?",
+                          style: TextStyle(fontFamily: 'Poppins', fontSize: 14),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text(
+                              "Batal",
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              "Keluar",
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
-                  },
 
+                    // Lanjutkan logout hanya jika dikonfirmasi
+                    if (confirmed == true) {
+                      await ref.read(authServiceProvider).logout();
+                      ref.read(currentUserProvider.notifier).state = null;
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => LandingPage()),
+                        (route) => false,
+                      );
+                    }
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,

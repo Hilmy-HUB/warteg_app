@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:warteg_app/admin/pages/admin_chat_page.dart';
 import 'package:warteg_app/model/cart_item_model.dart';
 import 'package:warteg_app/model/order_model.dart';
 import 'package:warteg_app/model/order_status_model.dart';
+import 'package:warteg_app/provider/chat_provider.dart';
 import 'package:warteg_app/provider/notification_provider.dart';
 import 'package:warteg_app/provider/order_provider.dart';
 import 'package:warteg_app/theme/color_theme.dart';
@@ -305,17 +307,64 @@ class _PickupCard extends ConsumerWidget {
                 // Header
                 Row(
                   children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withOpacity(0.1),
-                        shape: BoxShape.circle,
+                    // Taruh di dalam Row header, setelah status badge
+                    GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AdminChatPage(order: order),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.person_rounded,
-                        color: Color(0xFF10B981),
-                        size: 22,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: ColorTheme.primaryColor.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Stack(
+                          children: [
+                            const Center(
+                              child: Icon(
+                                Icons.chat_rounded,
+                                size: 18,
+                                color: ColorTheme.primaryColor,
+                              ),
+                            ),
+                            // Unread badge
+                            Consumer(
+                              builder: (_, ref, __) {
+                                final unread = ref.watch(
+                                  unreadCountProvider(order.id),
+                                );
+                                if (unread == 0) return const SizedBox.shrink();
+                                return Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: Container(
+                                    width: 16,
+                                    height: 16,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '$unread',
+                                        style: const TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),

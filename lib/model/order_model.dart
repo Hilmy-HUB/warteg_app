@@ -13,6 +13,7 @@ class OrderModel {
   final int ongkir;
   final int discount;
   final int total;
+  final String? sellerNote;
   final DateTime createdAt;
   final OrderStatusModel status;
   final String? vaNumber;
@@ -31,6 +32,7 @@ class OrderModel {
     required this.ongkir,
     required this.discount,
     required this.total,
+    this.sellerNote,
     required this.createdAt,
     required this.status,
     required this.expiredAt,
@@ -50,6 +52,7 @@ class OrderModel {
     int? ongkir,
     int? discount,
     int? total,
+    String? sellerNote,
     DateTime? createdAt,
     OrderStatusModel? status,
     String? vaNumber,
@@ -68,6 +71,7 @@ class OrderModel {
       ongkir: ongkir ?? this.ongkir,
       discount: discount ?? this.discount,
       total: total ?? this.total,
+      sellerNote: sellerNote ?? this.sellerNote,
       createdAt: createdAt ?? this.createdAt,
       status: status ?? this.status,
       vaNumber: vaNumber ?? this.vaNumber,
@@ -97,6 +101,7 @@ class OrderModel {
       'ongkir': ongkir,
       'discount': discount,
       'total': total,
+      'sellerNote': sellerNote,
       'createdAt': createdAt.toIso8601String(),
       'status': status.name,
       'vaNumber': vaNumber,
@@ -126,6 +131,7 @@ class OrderModel {
       ongkir: json['ongkir'],
       discount: json['discount'],
       total: json['total'],
+      sellerNote: json['sellerNote'] as String?,
       createdAt: DateTime.parse(json['createdAt']),
       status: OrderStatusModel.values.firstWhere(
         (e) => e.name == json['status'],

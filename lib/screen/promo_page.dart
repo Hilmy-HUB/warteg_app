@@ -7,6 +7,17 @@ import 'package:warteg_app/theme/color_theme.dart';
 class PromoPage extends ConsumerWidget {
   const PromoPage({super.key});
 
+  static String _formatRupiah(int amount) {
+    final s = amount.toString();
+    final buf = StringBuffer();
+    final mod = s.length % 3;
+    for (int i = 0; i < s.length; i++) {
+      if (i != 0 && (i - mod) % 3 == 0) buf.write('.');
+      buf.write(s[i]);
+    }
+    return buf.toString();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final promos = ref.watch(promoProvider);
@@ -49,7 +60,7 @@ class PromoPage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "Hemat lebih banyak 🎉",
+                  "Hemat lebih banyak!",
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 22,
@@ -112,27 +123,62 @@ class PromoPage extends ConsumerWidget {
 
                       final isSelected =
                           checkout.selectedPromo?.code == promo.code;
+                      final isMet = checkout.subtotal >= promo.minPurchase;
 
                       return GestureDetector(
                         onTap: () {
-                          ref
-                              .read(checkoutProvider.notifier)
-                              .selectPromo(promo);
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              backgroundColor: ColorTheme.primaryColor,
-                              content: Text(
-                                "${promo.code} berhasil digunakan",
-                                style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  color: Colors.white,
+                          if (!isMet) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: Colors.red.shade400,
+                                content: Text(
+                                  "Minimal pembelian Rp ${_formatRupiah(promo.minPurchase)} untuk menggunakan promo ini",
+                                  style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
+                            );
+                            return;
+                          }
+                          if (isSelected) {
+                            // Jika sudah dipilih, batalkan
+                            ref
+                                .read(checkoutProvider.notifier)
+                                .selectPromo(null);
 
-                          Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                backgroundColor: Colors.grey,
+                                content: Text(
+                                  "Promo dibatalkan",
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            );
+                          } else {
+                            // Jika belum dipilih, pilih promo
+                            ref
+                                .read(checkoutProvider.notifier)
+                                .selectPromo(promo);
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: ColorTheme.primaryColor,
+                                content: Text(
+                                  "${promo.code} berhasil digunakan",
+                                  style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
@@ -246,27 +292,47 @@ class PromoPage extends ConsumerWidget {
 
                                       const SizedBox(height: 14),
 
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 7,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: ColorTheme.buttonPrimary
-                                              .withOpacity(0.08),
-                                          borderRadius: BorderRadius.circular(
-                                            30,
+                                      // Ganti Container badge yang lama dengan ini
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              color: isMet
+                                                  ? ColorTheme.buttonPrimary
+                                                        .withOpacity(0.08)
+                                                  : Colors.red.shade50,
+                                              borderRadius:
+                                                  BorderRadius.circular(30),
+                                            ),
+                                            child: Text(
+                                              "Diskon ${promo.discountPercent.toInt()}% dari total belanja",
+                                              style: TextStyle(
+                                                fontFamily: 'Poppins',
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: isMet
+                                                    ? ColorTheme.buttonPrimary
+                                                    : Colors.red.shade400,
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                        child: Text(
-                                          "Diskon ${promo.discountPercent.toInt()}% dari total belanja",
-                                          style: const TextStyle(
-                                            fontFamily: 'Poppins',
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: ColorTheme.buttonPrimary,
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            isMet
+                                                ? "✓ Syarat terpenuhi"
+                                                : "Min. pembelian Rp ${_formatRupiah(promo.minPurchase)}",
+                                            style: TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w500,
+                                              color: isMet
+                                                  ? Colors.green
+                                                  : Colors.red.shade400,
+                                            ),
                                           ),
-                                        ),
+                                        ],
                                       ),
                                     ],
                                   ),

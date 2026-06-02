@@ -22,9 +22,29 @@ import 'package:warteg_app/provider/purchase_history_provider.dart';
 // ─── Konstanta lokasi pickup restoran ────────────────────────────────────────
 // Ganti sesuai alamat warteg kamu
 const String _kPickupAddress =
-    'Warteg Bahari — Jl. Sudirman No. 10, Jakarta Pusat';
+    'Warteg Bahari — Jl. Raya Tapos No.102, Ciriung, Kec. Cibinong, Kabupaten Bogor, Jawa Barat 16918';
 const String _kPickupEstimate =
     'Pesanan siap dalam ±15–20 menit setelah dikonfirmasi';
+// Jarak dummy — nanti bisa diganti dengan kalkulasi GPS asli
+const double _kJarakDummy = 2.4; // dalam km
+
+// // Koordinat dummy warteg
+// const double _kWartegsLat = -6.4833;
+// const double _kWartegLng = 106.8317;
+
+// Hitung jarak dummy (Haversine formula)
+// double _hitungJarak(double userLat, double userLng) {
+//   const double earthRadius = 6371;
+//   final double dLat = (userLat - _kWartegsLat) * (3.14159265358979 / 180);
+//   final double dLng = (userLng - _kWartegLng) * (3.14159265358979 / 180);
+//   final double a =
+//       (dLat / 2 * dLat / 2) +
+//       (_kWartegsLat * 3.14159265358979 / 180).cos() *
+//           (userLat * 3.14159265358979 / 180).cos() *
+//           (dLng / 2 * dLng / 2);
+//   final double c = 2 * (a.abs() < 1 ? a : 1).asin();
+//   return earthRadius * c;
+// }
 
 class OrderDetailPage extends ConsumerStatefulWidget {
   final List<CartItemModel> items;
@@ -320,9 +340,14 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                       subtitle: checkout.selectedAddress == null
                           ? 'Pilih alamat pengiriman'
                           : checkout.selectedAddress!.fullAddress,
+
                       subtitleColor: checkout.selectedAddress == null
                           ? Colors.grey.shade400
                           : Colors.grey.shade600,
+                      // ── TAMBAHAN: badge jarak ──
+                      distanceLabel: checkout.selectedAddress == null
+                          ? null
+                          : 'Jarak ke warteg: ${_kJarakDummy.toStringAsFixed(1)} km dari kamu',
                       trailing: const Icon(
                         Icons.chevron_right_rounded,
                         color: Colors.grey,
@@ -353,6 +378,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                     subtitle: checkout.selectedPromo == null
                         ? 'Ketuk untuk melihat promo yang tersedia'
                         : checkout.selectedPromo!.code,
+
                     subtitleColor: checkout.selectedPromo == null
                         ? Colors.grey.shade400
                         : const Color(0xFFF59E0B),
@@ -688,6 +714,7 @@ class _SectionCard extends StatelessWidget {
   final String subtitle;
   final Color subtitleColor;
   final Widget trailing;
+  final String? distanceLabel;
 
   const _SectionCard({
     required this.onTap,
@@ -698,6 +725,7 @@ class _SectionCard extends StatelessWidget {
     required this.subtitle,
     required this.subtitleColor,
     required this.trailing,
+    this.distanceLabel,
   });
 
   @override
@@ -754,6 +782,29 @@ class _SectionCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  // Di dalam Column > children, setelah Text(subtitle, ...)
+                  if (distanceLabel != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.directions_walk_rounded,
+                          size: 12,
+                          color: ColorTheme.buttonPrimary.withOpacity(0.7),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          distanceLabel!,
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: ColorTheme.buttonPrimary.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -945,15 +996,15 @@ class _PriceSummary extends StatelessWidget {
       child: Column(
         children: [
           _SummaryRow(label: 'Subtotal', value: 'Rp ${formatRupiah(subtotal)}'),
-          const SizedBox(height: 10),
-          _SummaryRow(
-            label: 'Ongkos Kirim',
-            icon: isPickup
-                ? Icons.storefront_rounded
-                : Icons.directions_bike_rounded,
-            value: isPickup ? 'Gratis' : 'Rp ${formatRupiah(ongkir)}',
-            valueColor: isPickup ? const Color(0xFF10B981) : null,
-          ),
+          if (!isPickup) ...[
+            const SizedBox(height: 10),
+            _SummaryRow(
+              label: 'Ongkos Kirim',
+              icon: Icons.directions_bike_rounded,
+              value: 'Gratis',
+              valueColor: const Color(0xFF10B981),
+            ),
+          ],
           const SizedBox(height: 10),
           _SummaryRow(
             label: 'Promo Diskon',
@@ -973,6 +1024,7 @@ class _PriceSummary extends StatelessWidget {
             valueColor: paymentMethod != null
                 ? ColorTheme.buttonPrimary
                 : Colors.grey.shade400,
+            fontSize: 13,
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),

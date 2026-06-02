@@ -4,6 +4,7 @@ class PromoModel {
   final int discountPercent;
   final bool freeShipping;
   final bool isActive;
+  final int minPurchase;
 
   const PromoModel({
     required this.code,
@@ -11,6 +12,7 @@ class PromoModel {
     required this.discountPercent,
     this.freeShipping = false,
     this.isActive = true,
+    this.minPurchase = 20000,
   });
 
   PromoModel copyWith({
@@ -19,6 +21,7 @@ class PromoModel {
     int? discountPercent,
     bool? freeShipping,
     bool? isActive,
+    int? minPurchase
   }) =>
       PromoModel(
         code: code ?? this.code,
@@ -26,5 +29,6 @@ class PromoModel {
         discountPercent: discountPercent ?? this.discountPercent,
         freeShipping: freeShipping ?? this.freeShipping,
         isActive: isActive ?? this.isActive,
+        minPurchase: minPurchase ?? this.minPurchase,
       );
 }

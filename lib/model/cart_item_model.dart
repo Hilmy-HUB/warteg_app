@@ -35,6 +35,7 @@ class CartItemModel {
       'hargaSatuan': hargaSatuan,
       'quantity': quantity,
       'isSelected': isSelected,
+      'notes': notes,
     };
   }
 

@@ -6,7 +6,6 @@ class PromoNotifier extends StateNotifier<List<PromoModel>> {
       : super([
           const PromoModel(code: 'SAVE5',   title: 'Diskon 5%',    discountPercent: 5),
           const PromoModel(code: 'HEMAT10', title: 'Diskon 10%',   discountPercent: 10),
-          const PromoModel(code: 'ONGKIR0', title: 'Gratis Ongkir',discountPercent: 0, freeShipping: true),
         ]);
 
   void addPromo(PromoModel promo) {
