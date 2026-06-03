@@ -13,8 +13,11 @@ class ReceiptPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final orders = ref.watch(orderProvider);
-
+    final orders = ref
+        .watch(orderProvider)
+        .where((o) => o.status == OrderStatusModel.selesai)
+        .toList();
+        
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7F4),
       body: SafeArea(
@@ -173,7 +176,9 @@ class _OrderCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        DateFormat('dd MMM yyyy, HH:mm').format(order.createdAt),
+                        DateFormat(
+                          'dd MMM yyyy, HH:mm',
+                        ).format(order.createdAt),
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 11,
@@ -184,7 +189,10 @@ class _OrderCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: _statusColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -205,8 +213,13 @@ class _OrderCard extends StatelessWidget {
             Divider(height: 1, color: Colors.grey.shade100),
             const SizedBox(height: 14),
             Text(
-              order.items.take(2).map((e) => '${e.menuName} (${e.quantity}x)').join(', ') +
-                  (order.items.length > 2 ? ' +${order.items.length - 2} lainnya' : ''),
+              order.items
+                      .take(2)
+                      .map((e) => '${e.menuName} (${e.quantity}x)')
+                      .join(', ') +
+                  (order.items.length > 2
+                      ? ' +${order.items.length - 2} lainnya'
+                      : ''),
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 12,

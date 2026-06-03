@@ -46,8 +46,9 @@ class _ReceiptDetailPageState extends State<ReceiptDetailPage> {
 
     try {
       // Capture widget as image
-      final boundary = _receiptKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
+      final boundary =
+          _receiptKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
       if (boundary == null) return;
 
       final image = await boundary.toImage(pixelRatio: 3.0);
@@ -449,7 +450,7 @@ class _ReceiptContent extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'WARTEG BAROKAH',
+                  'WARTEG ENDAH',
                   style: TextStyle(
                     fontFamily: mono,
                     fontSize: 15,
@@ -460,17 +461,7 @@ class _ReceiptContent extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'JL. MANUNGGAL NO.17',
-                  style: TextStyle(
-                    fontFamily: mono,
-                    fontSize: 10,
-                    letterSpacing: 0.5,
-                    color: Colors.black87,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                Text(
-                  'KOTA BANDUNG, JAWA BARAT',
+                  'Jl. Raya Tapos No.102, Ciriung, Kec. Cibinong, \nKabupaten Bogor, Jawa Barat 16918',
                   style: TextStyle(
                     fontFamily: mono,
                     fontSize: 10,
@@ -503,11 +494,19 @@ class _ReceiptContent extends StatelessWidget {
             children: [
               Text(
                 order.isPickup ? 'AMBIL SENDIRI' : 'DIANTAR',
-                style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black45),
+                style: TextStyle(
+                  fontFamily: mono,
+                  fontSize: 9,
+                  color: Colors.black45,
+                ),
               ),
               Text(
                 order.paymentMethod.name.toUpperCase(),
-                style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black45),
+                style: TextStyle(
+                  fontFamily: mono,
+                  fontSize: 9,
+                  color: Colors.black45,
+                ),
               ),
             ],
           ),
@@ -515,7 +514,11 @@ class _ReceiptContent extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               order.address.fullAddress.toUpperCase(),
-              style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black45),
+              style: TextStyle(
+                fontFamily: mono,
+                fontSize: 9,
+                color: Colors.black45,
+              ),
             ),
           ],
 
@@ -527,26 +530,50 @@ class _ReceiptContent extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text('NAMA ITEM',
-                    style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black38)),
+                child: Text(
+                  'NAMA ITEM',
+                  style: TextStyle(
+                    fontFamily: mono,
+                    fontSize: 9,
+                    color: Colors.black38,
+                  ),
+                ),
               ),
               SizedBox(
                 width: 28,
-                child: Text('QTY',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black38)),
+                child: Text(
+                  'QTY',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: mono,
+                    fontSize: 9,
+                    color: Colors.black38,
+                  ),
+                ),
               ),
               SizedBox(
                 width: 56,
-                child: Text('HARGA',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black38)),
+                child: Text(
+                  'HARGA',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontFamily: mono,
+                    fontSize: 9,
+                    color: Colors.black38,
+                  ),
+                ),
               ),
               SizedBox(
                 width: 62,
-                child: Text('TOTAL',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black38)),
+                child: Text(
+                  'TOTAL',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontFamily: mono,
+                    fontSize: 9,
+                    color: Colors.black38,
+                  ),
+                ),
               ),
             ],
           ),
@@ -557,90 +584,128 @@ class _ReceiptContent extends StatelessWidget {
             final rows = <Widget>[];
 
             // Baris utama: nama item
-            rows.add(Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.menuName.toUpperCase(),
-                      style: TextStyle(
-                        fontFamily: mono,
-                        fontSize: 11,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w700,
+            rows.add(
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.menuName.toUpperCase(),
+                        style: TextStyle(
+                          fontFamily: mono,
+                          fontSize: 11,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(
-                    width: 28,
-                    child: Text('${item.quantity}',
+                    SizedBox(
+                      width: 28,
+                      child: Text(
+                        '${item.quantity}',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontFamily: mono, fontSize: 11, color: Colors.black87)),
-                  ),
-                  SizedBox(
-                    width: 56,
-                    child: Text(NumberFormat('#,###').format(item.basePrice),
-                        textAlign: TextAlign.right,
-                        style: TextStyle(fontFamily: mono, fontSize: 11, color: Colors.black87)),
-                  ),
-                  SizedBox(
-                    width: 62,
-                    child: Text(NumberFormat('#,###').format(item.basePrice * item.quantity),
+                        style: TextStyle(
+                          fontFamily: mono,
+                          fontSize: 11,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 56,
+                      child: Text(
+                        NumberFormat('#,###').format(item.basePrice),
                         textAlign: TextAlign.right,
                         style: TextStyle(
-                            fontFamily: mono,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87)),
-                  ),
-                ],
+                          fontFamily: mono,
+                          fontSize: 11,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 62,
+                      child: Text(
+                        NumberFormat(
+                          '#,###',
+                        ).format(item.basePrice * item.quantity),
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontFamily: mono,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ));
+            );
 
             // Baris per add on
             for (final addOn in item.addOns) {
-              rows.add(Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 8),
+              rows.add(
+                Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Text(
+                          '+ ${addOn.name}',
+                          style: TextStyle(
+                            fontFamily: mono,
+                            fontSize: 10,
+                            color: Colors.black45,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 28,
                       child: Text(
-                        '+ ${addOn.name}',
+                        '${item.quantity}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: mono,
+                          fontSize: 10,
+                          color: Colors.black38,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 56,
+                      child: Text(
+                        NumberFormat('#,###').format(addOn.price),
+                        textAlign: TextAlign.right,
                         style: TextStyle(
                           fontFamily: mono,
                           fontSize: 10,
                           color: Colors.black45,
-                          fontStyle: FontStyle.italic,
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(
-                    width: 28,
-                    child: Text('${item.quantity}',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontFamily: mono, fontSize: 10, color: Colors.black38)),
-                  ),
-                  SizedBox(
-                    width: 56,
-                    child: Text(NumberFormat('#,###').format(addOn.price),
-                        textAlign: TextAlign.right,
-                        style: TextStyle(fontFamily: mono, fontSize: 10, color: Colors.black45)),
-                  ),
-                  SizedBox(
-                    width: 62,
-                    child: Text(NumberFormat('#,###').format(addOn.price * item.quantity),
+                    SizedBox(
+                      width: 62,
+                      child: Text(
+                        NumberFormat(
+                          '#,###',
+                        ).format(addOn.price * item.quantity),
                         textAlign: TextAlign.right,
                         style: TextStyle(
-                            fontFamily: mono,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black45)),
-                  ),
-                ],
-              ));
+                          fontFamily: mono,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black45,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
             }
             rows.add(const SizedBox(height: 4));
             return rows;
@@ -653,7 +718,12 @@ class _ReceiptContent extends StatelessWidget {
           _CostLine(label: 'SUBTOTAL', value: order.subtotal, mono: mono),
           _CostLine(label: 'ONGKOS KIRIM', value: order.ongkir, mono: mono),
           if (order.discount > 0)
-            _CostLine(label: 'DISKON', value: -order.discount, mono: mono, isDiscount: true),
+            _CostLine(
+              label: 'DISKON',
+              value: -order.discount,
+              mono: mono,
+              isDiscount: true,
+            ),
 
           const SizedBox(height: 6),
           _Line(mono: mono),
@@ -672,11 +742,19 @@ class _ReceiptContent extends StatelessWidget {
           const SizedBox(height: 18),
 
           // ── Status ───────────────────────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('STATUS          : ',
-                  style: TextStyle(fontFamily: mono, fontSize: 11, color: Colors.black45)),
+              Text(
+                'STATUS : ',
+                style: TextStyle(
+                  fontFamily: mono,
+                  fontSize: 11,
+                  color: Colors.black45,
+                ),
+              ),
+              const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
@@ -702,7 +780,11 @@ class _ReceiptContent extends StatelessWidget {
             const SizedBox(height: 5),
             Text(
               'CATATAN         : ${order.sellerNote!.toUpperCase()}',
-              style: TextStyle(fontFamily: mono, fontSize: 10, color: Colors.black45),
+              style: TextStyle(
+                fontFamily: mono,
+                fontSize: 10,
+                color: Colors.black45,
+              ),
             ),
           ],
 
@@ -742,7 +824,12 @@ class _ReceiptStub extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             orderId.toUpperCase(),
-            style: TextStyle(fontFamily: mono, fontSize: 8, letterSpacing: 2, color: Colors.black38),
+            style: TextStyle(
+              fontFamily: mono,
+              fontSize: 8,
+              letterSpacing: 2,
+              color: Colors.black38,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
@@ -762,7 +849,12 @@ class _ReceiptStub extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             DateFormat('dd MMM yyyy, HH:mm').format(createdAt),
-            style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black38, letterSpacing: 0.5),
+            style: TextStyle(
+              fontFamily: mono,
+              fontSize: 9,
+              color: Colors.black38,
+              letterSpacing: 0.5,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -778,9 +870,66 @@ class _BarcodePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.black87;
     final widths = [
-      2,1,3,1,2,1,1,3,2,1,2,2,1,3,1,2,1,1,2,3,
-      1,2,1,2,3,1,1,2,1,3,2,1,2,1,1,3,2,1,3,1,
-      2,1,2,3,1,1,2,1,3,2,1,2,1,1,3,2,1,3,1,2,
+      2,
+      1,
+      3,
+      1,
+      2,
+      1,
+      1,
+      3,
+      2,
+      1,
+      2,
+      2,
+      1,
+      3,
+      1,
+      2,
+      1,
+      1,
+      2,
+      3,
+      1,
+      2,
+      1,
+      2,
+      3,
+      1,
+      1,
+      2,
+      1,
+      3,
+      2,
+      1,
+      2,
+      1,
+      1,
+      3,
+      2,
+      1,
+      3,
+      1,
+      2,
+      1,
+      2,
+      3,
+      1,
+      1,
+      2,
+      1,
+      3,
+      2,
+      1,
+      2,
+      1,
+      1,
+      3,
+      2,
+      1,
+      3,
+      1,
+      2,
     ];
     final totalWidth = widths.fold(0, (a, b) => a + b).toDouble();
     final scale = size.width / totalWidth;
@@ -812,21 +961,23 @@ class _Line extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!dashed) return const Divider(height: 1, color: Colors.black26);
-    return LayoutBuilder(builder: (ctx, c) {
-      const dw = 5.0, gap = 3.0;
-      final n = (c.maxWidth / (dw + gap)).floor();
-      return Row(
-        children: List.generate(
-          n,
-          (_) => Container(
-            width: dw,
-            height: 1,
-            margin: const EdgeInsets.only(right: gap),
-            color: Colors.black26,
+    return LayoutBuilder(
+      builder: (ctx, c) {
+        const dw = 5.0, gap = 3.0;
+        final n = (c.maxWidth / (dw + gap)).floor();
+        return Row(
+          children: List.generate(
+            n,
+            (_) => Container(
+              width: dw,
+              height: 1,
+              margin: const EdgeInsets.only(right: gap),
+              color: Colors.black26,
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }
 
@@ -870,8 +1021,14 @@ class _CostLine extends StatelessWidget {
               ),
             ),
           ),
-          Text(': ',
-              style: TextStyle(fontFamily: mono, fontSize: fontSize, color: Colors.black38)),
+          Text(
+            ': ',
+            style: TextStyle(
+              fontFamily: mono,
+              fontSize: fontSize,
+              color: Colors.black38,
+            ),
+          ),
           Text(
             display,
             style: TextStyle(

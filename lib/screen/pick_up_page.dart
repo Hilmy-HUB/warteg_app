@@ -78,63 +78,83 @@ class _PickupPageState extends ConsumerState<PickupPage>
   void _showChatOrderPicker(BuildContext context, List<OrderModel> orders) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // ✅ tambah ini
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Pilih Pesanan',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w700,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...orders.map(
-            (o) => ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: ColorTheme.buttonPrimary,
-                child: Icon(
-                  Icons.receipt_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (_, scrollController) => Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
               ),
-              title: Text(
-                'Order #${o.id.substring(8)}',
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              subtitle: Text(
-                o.status.label,
-                style: const TextStyle(fontFamily: 'Poppins', fontSize: 12),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => UserChatPage(order: o)),
-                );
-              },
             ),
-          ),
-          const SizedBox(height: 16),
-        ],
+            const SizedBox(height: 16),
+            const Text(
+              'Pilih Pesanan',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView(
+                controller: scrollController,
+                children: [
+                  ...orders.map(
+                    (o) => ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: ColorTheme.buttonPrimary,
+                        child: Icon(
+                          o.deliveryType == 'delivery'
+                              ? Icons.delivery_dining_rounded
+                              : Icons.storefront_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                      title: Text(
+                        'Order #${o.id.substring(8)}',
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${o.deliveryType == 'delivery' ? 'Delivery' : 'Pickup'} · ${o.status.label}',
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => UserChatPage(order: o),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
