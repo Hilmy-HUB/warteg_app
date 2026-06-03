@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:warteg_app/admin/pages/admin_chat_page.dart';
 import 'package:warteg_app/model/cart_item_model.dart';
+import 'package:warteg_app/model/chat_message_model.dart';
 import 'package:warteg_app/model/order_model.dart';
 import 'package:warteg_app/model/order_status_model.dart';
 import 'package:warteg_app/provider/chat_provider.dart';
@@ -71,7 +72,6 @@ class _PickupOrderPageState extends ConsumerState<PickupOrderPage>
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header ───────────────────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 25, 20, 0),
@@ -154,7 +154,6 @@ class _PickupOrderPageState extends ConsumerState<PickupOrderPage>
             Expanded(
               child: TabBarView(
                 controller: _tab,
-                // TabBarView:
                 children: [
                   _PickupList(orders: incoming, mode: _PickupMode.incoming),
                   _PickupList(orders: processing, mode: _PickupMode.processing),
@@ -165,8 +164,6 @@ class _PickupOrderPageState extends ConsumerState<PickupOrderPage>
                   _PickupList(orders: done, mode: _PickupMode.done),
                   _PickupList(orders: cancelled, mode: _PickupMode.cancelled),
                 ],
-
-                // Enum — tambah siapDiambil:
               ),
             ),
           ],
@@ -252,7 +249,7 @@ class _PickupCard extends ConsumerWidget {
   Color _statusColor(OrderStatusModel s) => switch (s) {
     OrderStatusModel.tungguKonfirmasi => const Color(0xFF8B5CF6),
     OrderStatusModel.diproses => Colors.blue,
-    OrderStatusModel.siapDiambil => const Color(0xFF10B981), // ← tambah
+    OrderStatusModel.siapDiambil => const Color(0xFF10B981),
     OrderStatusModel.selesai => const Color(0xFF10B981),
     OrderStatusModel.dibatalkan => Colors.red,
     _ => Colors.grey,
@@ -261,7 +258,7 @@ class _PickupCard extends ConsumerWidget {
   String _statusLabel(OrderStatusModel s) => switch (s) {
     OrderStatusModel.tungguKonfirmasi => 'Tunggu Konfirmasi',
     OrderStatusModel.diproses => 'Diproses',
-    OrderStatusModel.siapDiambil => 'Siap Diambil', // ← tambah
+    OrderStatusModel.siapDiambil => 'Siap Diambil',
     OrderStatusModel.selesai => 'Selesai',
     OrderStatusModel.dibatalkan => 'Dibatalkan',
     _ => '-',
@@ -269,8 +266,10 @@ class _PickupCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // ✅ BERSIH — tidak ada auto-chat di sini
     final notifier = ref.read(orderProvider.notifier);
     final notifNotifier = ref.read(notificationProvider.notifier);
+    final chatNotifier = ref.read(chatProvider(order.id).notifier);
     final statusColor = _statusColor(order.status);
 
     return Container(
@@ -307,7 +306,6 @@ class _PickupCard extends ConsumerWidget {
                 // Header
                 Row(
                   children: [
-                    // Taruh di dalam Row header, setelah status badge
                     GestureDetector(
                       onTap: () => Navigator.push(
                         context,
@@ -331,7 +329,6 @@ class _PickupCard extends ConsumerWidget {
                                 color: ColorTheme.primaryColor,
                               ),
                             ),
-                            // Unread badge
                             Consumer(
                               builder: (_, ref, __) {
                                 final unread = ref.watch(
@@ -474,14 +471,12 @@ class _PickupCard extends ConsumerWidget {
                 Divider(color: Colors.grey.shade100, thickness: 1),
                 const SizedBox(height: 10),
 
-                // Items
                 ...order.items.map((item) => _ItemRow(item: item)),
 
                 const SizedBox(height: 10),
                 Divider(color: Colors.grey.shade100, thickness: 1),
                 const SizedBox(height: 10),
 
-                // Pricing
                 if (order.discount > 0)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
@@ -568,6 +563,22 @@ class _PickupCard extends ConsumerWidget {
                                   'Maaf, pesanan pickup #${order.id.substring(8)} tidak dapat kami proses.',
                               orderId: order.id,
                             );
+                            if (confirm != true) return;
+                            await notifier.updateOrderStatus(
+                              order.id,
+                              OrderStatusModel.dibatalkan,
+                            );
+                            // ✅ Tambahkan ini
+                            chatNotifier.sendMessage(
+                              '❌ Maaf, pesanan pickup kamu tidak dapat kami terima saat ini. Silakan coba lagi nanti.',
+                              ChatSender.admin,
+                            );
+                            notifNotifier.addNotification(
+                              title: 'Pesanan Ditolak',
+                              message:
+                                  'Maaf, pesanan pickup #${order.id.substring(8)} tidak dapat kami proses.',
+                              orderId: order.id,
+                            );
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 13),
@@ -612,6 +623,11 @@ class _PickupCard extends ConsumerWidget {
                             );
                             if (confirm != true) return;
                             await notifier.acceptOrder(order.id);
+                            // ✅ Auto-chat terima pickup
+                            chatNotifier.sendMessage(
+                              '✅ Pesanan pickup kamu telah diterima! Sedang kami siapkan. Silakan datang ke restoran untuk mengambil.',
+                              ChatSender.admin,
+                            );
                             notifNotifier.addNotification(
                               title: 'Pesanan Diterima ✅',
                               message:
@@ -671,7 +687,12 @@ class _PickupCard extends ConsumerWidget {
                         await notifier.updateOrderStatus(
                           order.id,
                           OrderStatusModel.siapDiambil,
-                        ); // ← fix
+                        );
+                        // ✅ Auto-chat siap diambil
+                        chatNotifier.sendMessage(
+                          '🎉 Pesanan pickup kamu sudah siap! Silakan datang ke restoran untuk mengambil.',
+                          ChatSender.admin,
+                        );
                         notifNotifier.addNotification(
                           title: 'Pesanan Siap Diambil! 🎉',
                           message:
@@ -844,7 +865,7 @@ class _ItemRow extends StatelessWidget {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              '+ $a',
+                              '+ ${a.name}',
                               style: const TextStyle(
                                 fontFamily: 'Poppins',
                                 fontSize: 10,

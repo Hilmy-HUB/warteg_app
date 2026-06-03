@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:warteg_app/model/cart_item_model.dart';
 import 'package:warteg_app/model/order_model.dart';
 import 'package:warteg_app/provider/address_provider.dart';
+import 'package:warteg_app/provider/chat_provider.dart';
 import 'package:warteg_app/provider/checkout_provider.dart';
 import 'package:warteg_app/provider/navbar_provider.dart';
 import 'package:warteg_app/provider/order_provider.dart';
@@ -189,6 +190,23 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       );
 
       await ref.read(orderProvider.notifier).addOrder(order);
+
+      final itemLines = order.items
+          .map((item) {
+            final addOnText = item.addOns.isNotEmpty
+                ? '\n   + ${item.addOns.map((a) => a.name).join(', ')}'
+                : '';
+            return '• ${item.menuName} x${item.quantity}$addOnText';
+          })
+          .join('\n');
+
+      final deliveryLabel = order.deliveryType == 'delivery'
+          ? 'Delivery'
+          : 'Pickup';
+      final systemText =
+          '🛒 Pesanan Baru ($deliveryLabel)\n$itemLines\n\nTotal: Rp ${_formatRupiah(order.total)}';
+
+      ref.read(chatProvider(order.id).notifier).sendSystemMessage(systemText);
 
       ref
           .read(notificationProvider.notifier)
@@ -901,7 +919,7 @@ class _ItemCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              '+ $e',
+                              '+ ${e.name}',
                               style: const TextStyle(
                                 fontFamily: 'Poppins',
                                 fontSize: 10,

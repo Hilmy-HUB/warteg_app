@@ -37,6 +37,7 @@ dependencies:
   image_picker: ^1.2.2
   intl: ^0.20.2
   riverpod: ^3.2.1
+  share_plus: ^13.1.0
   shared_preferences: ^2.5.5
   supabase: ^2.10.6
   supabase_flutter: ^2.12.4

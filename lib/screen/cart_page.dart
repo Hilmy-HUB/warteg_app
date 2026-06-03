@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:warteg_app/model/addon_model.dart';
 import 'package:warteg_app/model/cart_item_model.dart';
 import 'package:warteg_app/provider/cart_provider.dart';
 import 'package:warteg_app/screen/order_detail_page.dart';
@@ -410,7 +411,7 @@ class _CartItemCard extends StatelessWidget {
                         runSpacing: 4,
                         children: item.addOns
                             .map(
-                              (addOn) => Container(
+                              (AddOnModel addOn) => Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 7,
                                   vertical: 2,
@@ -422,7 +423,7 @@ class _CartItemCard extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  '+ $addOn',
+                                  '+ ${addOn.name}',
                                   style: const TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 10,

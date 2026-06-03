@@ -48,20 +48,21 @@ class _HomePageState extends ConsumerState<HomePage> {
     // Sesuaikan dengan cara homepage_data.dart Anda menyediakan data
     final allMenus = ref.watch(menuProvider);
     final recommendedMenu = allMenus.take(4).toList();
+    final defaultTopMenu =
+        ['Nasi Goreng', 'Sambel Ati', 'Telor Balado', 'Tempe Orek']
+            .map((name) => allMenus.where((m) => m.name == name).firstOrNull)
+            .whereType<MenuModel>()
+            .toList();
+
     final topNames = ref.watch(purchaseHistoryProvider.notifier).topMenuNames;
-    final topOfWeekMenu = topNames.isEmpty
-        ? allMenus
-              .where((m) => m.category != MenuCategory.minuman)
-              .toList()
-              .reversed
-              .take(4)
-              .toList()
-        : topNames
-              .map((name) => allMenus.where((m) => m.name == name).firstOrNull)
-              .whereType<MenuModel>()
-              .where((m) => m.category != MenuCategory.minuman)
-              .take(4)
-              .toList();
+
+    final topOfWeekMenu = [
+      ...topNames
+          .map((name) => allMenus.where((m) => m.name == name).firstOrNull)
+          .whereType<MenuModel>()
+          .where((m) => m.category != MenuCategory.minuman),
+      ...defaultTopMenu.where((m) => !topNames.contains(m.name)),
+    ].take(4).toList();
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7F4),
       body: SafeArea(

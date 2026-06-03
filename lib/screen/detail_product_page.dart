@@ -5,6 +5,7 @@ import 'package:warteg_app/model/menu_model.dart';
 import 'package:warteg_app/provider/cart_provider.dart';
 import 'package:warteg_app/screen/cart_page.dart';
 import 'package:warteg_app/theme/color_theme.dart';
+import 'package:warteg_app/model/addon_model.dart';
 
 class DetailProductPage extends ConsumerStatefulWidget {
   final MenuModel product;
@@ -25,14 +26,28 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
 
   int quantity = 1;
 
+  // Daftar add on dengan harga
+  static const _addOnList = [
+    AddOnModel(name: 'Kerupuk Putih', price: 2000),
+    AddOnModel(name: 'Kerupuk Kulit', price: 2000),
+    AddOnModel(name: 'Ekstra Sambal', price: 3000),
+    AddOnModel(name: 'Ekstra Nasi',   price: 4000),
+  ];
+
+  List<bool> get _addOnSelected => [addOn1, addOn2, addOn3, addOn4];
+
+  List<AddOnModel> get selectedAddOns => [
+        for (int i = 0; i < _addOnList.length; i++)
+          if (_addOnSelected[i]) _addOnList[i],
+      ];
+
   double get hargaAwal => widget.product.price;
 
   double get hargaSatuan {
     double total = hargaAwal;
-    if (addOn1) total += 2000;
-    if (addOn2) total += 2000;
-    if (addOn3) total += 3000;
-    if (addOn4) total += 4000;
+    for (int i = 0; i < _addOnList.length; i++) {
+      if (_addOnSelected[i]) total += _addOnList[i].price;
+    }
     return total;
   }
 
@@ -159,15 +174,9 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                 menuName: widget.product.name,
                 image: widget.product.imageUrl ?? '',
                 basePrice: widget.product.price.toInt(),
-                addOns: [
-                  if (addOn1) "White Crackers",
-                  if (addOn2) "Skin Crackers",
-                  if (addOn3) "Extra Sambal",
-                  if (addOn4) "Extra Rice",
-                ],
-                hargaSatuan: hargaSatuan.toInt(),
+                addOns: selectedAddOns,
                 quantity: quantity,
-                notes: notesController.text,
+                notes: notesController.text.isEmpty ? null : notesController.text,
               );
 
               ref.read(cartProvider.notifier).addToCart(cartItem);
@@ -202,7 +211,9 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                   ],
                 ),
                 Container(
-                    width: 1.5, height: 24, color: Colors.white.withOpacity(0.4)),
+                    width: 1.5,
+                    height: 24,
+                    color: Colors.white.withOpacity(0.4)),
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -313,10 +324,12 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                                     }
                                   },
                                   child: Container(
-                                    width: 36, height: 36,
+                                    width: 36,
+                                    height: 36,
                                     decoration: BoxDecoration(
                                       color: quantity > 1
-                                          ? ColorTheme.buttonPrimary.withOpacity(0.1)
+                                          ? ColorTheme.buttonPrimary
+                                              .withOpacity(0.1)
                                           : Colors.transparent,
                                       borderRadius: BorderRadius.circular(14),
                                     ),
@@ -340,9 +353,11 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                                 GestureDetector(
                                   onTap: () => setState(() => quantity++),
                                   child: Container(
-                                    width: 36, height: 36,
+                                    width: 36,
+                                    height: 36,
                                     decoration: BoxDecoration(
-                                      color: ColorTheme.buttonPrimary.withOpacity(0.1),
+                                      color: ColorTheme.buttonPrimary
+                                          .withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                     child: const Icon(Icons.add_rounded,
@@ -374,8 +389,10 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                       Text(
                         widget.product.description,
                         style: const TextStyle(
-                          fontSize: 14, height: 1.6,
-                          color: Colors.black54, fontFamily: 'Poppins',
+                          fontSize: 14,
+                          height: 1.6,
+                          color: Colors.black54,
+                          fontFamily: 'Poppins',
                         ),
                       ),
 
@@ -387,7 +404,8 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                       Row(
                         children: [
                           Container(
-                            width: 5, height: 22,
+                            width: 5,
+                            height: 22,
                             decoration: BoxDecoration(
                               color: ColorTheme.buttonPrimary,
                               borderRadius: BorderRadius.circular(6),
@@ -419,14 +437,26 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
 
                       const SizedBox(height: 16),
 
-                      buildAddOn(title: "Kerupuk Putih", price: 2000,
-                          value: addOn1, onChanged: (v) => setState(() => addOn1 = v!)),
-                      buildAddOn(title: "Kerupuk Kulit", price: 2000,
-                          value: addOn2, onChanged: (v) => setState(() => addOn2 = v!)),
-                      buildAddOn(title: "Ekstra Sambal", price: 3000,
-                          value: addOn3, onChanged: (v) => setState(() => addOn3 = v!)),
-                      buildAddOn(title: "Ekstra Nasi", price: 4000,
-                          value: addOn4, onChanged: (v) => setState(() => addOn4 = v!)),
+                      buildAddOn(
+                          title: _addOnList[0].name,
+                          price: _addOnList[0].price,
+                          value: addOn1,
+                          onChanged: (v) => setState(() => addOn1 = v!)),
+                      buildAddOn(
+                          title: _addOnList[1].name,
+                          price: _addOnList[1].price,
+                          value: addOn2,
+                          onChanged: (v) => setState(() => addOn2 = v!)),
+                      buildAddOn(
+                          title: _addOnList[2].name,
+                          price: _addOnList[2].price,
+                          value: addOn3,
+                          onChanged: (v) => setState(() => addOn3 = v!)),
+                      buildAddOn(
+                          title: _addOnList[3].name,
+                          price: _addOnList[3].price,
+                          value: addOn4,
+                          onChanged: (v) => setState(() => addOn4 = v!)),
 
                       const SizedBox(height: 24),
                       Divider(color: Colors.grey.shade200, thickness: 1.5),
@@ -436,7 +466,8 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                       Row(
                         children: [
                           Container(
-                            width: 5, height: 22,
+                            width: 5,
+                            height: 22,
                             decoration: BoxDecoration(
                               color: ColorTheme.buttonPrimary,
                               borderRadius: BorderRadius.circular(6),
@@ -490,7 +521,8 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
           // Floating AppBar
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -521,7 +553,8 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                           0, (sum, item) => sum + item.quantity);
                       return InkWell(
                         borderRadius: BorderRadius.circular(50),
-                        onTap: () => Navigator.push(context,
+                        onTap: () => Navigator.push(
+                            context,
                             MaterialPageRoute(
                                 builder: (_) => const CartPage())),
                         child: Stack(
@@ -546,7 +579,8 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
                             ),
                             if (totalItems > 0)
                               Positioned(
-                                right: -2, top: -2,
+                                right: -2,
+                                top: -2,
                                 child: Container(
                                   padding: const EdgeInsets.all(6),
                                   constraints: const BoxConstraints(

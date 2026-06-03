@@ -42,7 +42,7 @@ class CartNotifier extends StateNotifier<List<CartItemModel>> {
     final index = state.indexWhere(
       (element) =>
           element.menuName == item.menuName &&
-          element.addOns.toString() == item.addOns.toString(),
+          element.addOns.map((a) => a.name).join(', ') == item.addOns.map((a) => a.name).join(', '),
     );
 
     // kalau item sama → quantity ditambah

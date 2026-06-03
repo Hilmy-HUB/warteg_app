@@ -1,17 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'dart:ui' as ui;
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:warteg_app/model/order_model.dart';
 import 'package:warteg_app/model/order_status_model.dart';
 import 'package:warteg_app/extension/order_status_extension.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 
-class ReceiptDetailPage extends StatelessWidget {
+class ReceiptDetailPage extends StatefulWidget {
   final OrderModel order;
 
   const ReceiptDetailPage({super.key, required this.order});
 
+  @override
+  State<ReceiptDetailPage> createState() => _ReceiptDetailPageState();
+}
+
+class _ReceiptDetailPageState extends State<ReceiptDetailPage> {
+  final GlobalKey _receiptKey = GlobalKey();
+  bool _isSaving = false;
+
+  static const _mono = 'Courier';
+
   Color get _statusColor {
-    switch (order.status) {
+    switch (widget.order.status) {
       case OrderStatusModel.selesai:
         return const Color(0xFF16A34A);
       case OrderStatusModel.dibatalkan:
@@ -26,10 +39,152 @@ class ReceiptDetailPage extends StatelessWidget {
     }
   }
 
+  // ── Capture & Share ──────────────────────────────────────────────────────
+
+  Future<void> _captureAndShare() async {
+    setState(() => _isSaving = true);
+
+    try {
+      // Capture widget as image
+      final boundary = _receiptKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) return;
+
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+
+      final bytes = byteData.buffer.asUint8List();
+
+      final fileName =
+          'struk_${widget.order.id}_${DateFormat('yyyyMMdd_HHmm').format(widget.order.createdAt)}.png';
+
+      // Share langsung dari memory, tanpa tulis ke filesystem
+      await Share.shareXFiles(
+        [XFile.fromData(bytes, name: fileName, mimeType: 'image/png')],
+        subject: 'Struk Pesanan ${widget.order.id}',
+        text: 'Struk pesanan dari Warteg Barokah',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Gagal menyimpan struk: $e',
+              style: const TextStyle(fontFamily: 'Poppins'),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Receipt hanya bisa dilihat saat pesanan selesai
+    final canViewReceipt = widget.order.status == OrderStatusModel.selesai;
+
+    if (!canViewReceipt) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8F7F4),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.maybePop(context),
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Text(
+                      'Detail Struk',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black87,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.10),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.receipt_long_outlined,
+                          size: 40,
+                          color: Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Struk belum tersedia',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Struk hanya tersedia setelah\npesanan selesai',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFFEEECE6),
+      backgroundColor: const Color(0xFFD6D3C8),
       body: SafeArea(
         child: Column(
           children: [
@@ -48,7 +203,7 @@ class ReceiptDetailPage extends StatelessWidget {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
+                            color: Colors.black.withOpacity(0.08),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -62,47 +217,145 @@ class ReceiptDetailPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Text(
-                    'Detail Struk',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87,
-                      letterSpacing: -0.4,
+                  const Expanded(
+                    child: Text(
+                      'Detail Struk',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black87,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                  ),
+                  // ── Download Button ──────────────────────────────────
+                  GestureDetector(
+                    onTap: _isSaving ? null : _captureAndShare,
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: ColorTheme.primaryColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: ColorTheme.primaryColor.withOpacity(0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: _isSaving
+                          ? const Padding(
+                              padding: EdgeInsets.all(10),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.download_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            // ── Receipt ────────────────────────────────────────────────
+            // ── Paper Receipt (wrapped in RepaintBoundary) ─────────────
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
-                child: Column(
-                  children: [
-                    // Top half of receipt
-                    _ReceiptTop(order: order, statusColor: _statusColor),
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 40),
+                child: RepaintBoundary(
+                  key: _receiptKey,
+                  child: Container(
+                    color: const Color(0xFFD6D3C8),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Column(
+                      children: [
+                        // Top paper
+                        _PaperSection(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(4),
+                          ),
+                          child: _ReceiptContent(
+                            order: widget.order,
+                            statusColor: _statusColor,
+                            mono: _mono,
+                          ),
+                        ),
 
-                    // Jagged tear edge (top)
-                    CustomPaint(
-                      size: const Size(double.infinity, 14),
-                      painter: _JaggedEdgePainter(isTop: true),
+                        // Jagged tear edge
+                        CustomPaint(
+                          size: const Size(double.infinity, 12),
+                          painter: _TearEdgePainter(),
+                        ),
+
+                        // Stub
+                        _PaperSection(
+                          borderRadius: const BorderRadius.vertical(
+                            bottom: Radius.circular(4),
+                          ),
+                          child: _ReceiptStub(
+                            orderId: widget.order.id,
+                            createdAt: widget.order.createdAt,
+                            mono: _mono,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                ),
+              ),
+            ),
 
-                    // Middle body
-                    _ReceiptBody(order: order),
-
-                    // Jagged tear edge (bottom)
-                    CustomPaint(
-                      size: const Size(double.infinity, 14),
-                      painter: _JaggedEdgePainter(isTop: false),
+            // ── Bottom Share Bar ───────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, -3),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _captureAndShare,
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.share_rounded, size: 18),
+                  label: Text(
+                    _isSaving ? 'Menyimpan...' : 'Simpan / Bagikan Struk',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                     ),
-
-                    // Bottom stub (barcode area)
-                    _ReceiptBottom(orderId: order.id),
-                  ],
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ColorTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
                 ),
               ),
             ),
@@ -113,460 +366,403 @@ class ReceiptDetailPage extends StatelessWidget {
   }
 }
 
-// ─── Jagged Edge Painter ──────────────────────────────────────────────────────
+// ─── Paper wrapper ────────────────────────────────────────────────────────────
 
-class _JaggedEdgePainter extends CustomPainter {
-  final bool isTop;
-  const _JaggedEdgePainter({required this.isTop});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white;
-    final bgPaint = Paint()..color = const Color(0xFFEEECE6);
-
-    const toothWidth = 10.0;
-    const toothHeight = 7.0;
-    final toothCount = (size.width / toothWidth).ceil() + 1;
-
-    if (isTop) {
-      // White rectangle below teeth
-      canvas.drawRect(
-        Rect.fromLTWH(0, toothHeight, size.width, size.height - toothHeight),
-        paint,
-      );
-      // Teeth cut from background color
-      final path = Path();
-      path.moveTo(0, 0);
-      for (int i = 0; i < toothCount; i++) {
-        final x = i * toothWidth;
-        path.lineTo(x + toothWidth / 2, toothHeight);
-        path.lineTo(x + toothWidth, 0);
-      }
-      path.lineTo(size.width, size.height);
-      path.lineTo(0, size.height);
-      path.close();
-      canvas.drawPath(path, bgPaint);
-    } else {
-      // White rectangle above teeth
-      canvas.drawRect(
-        Rect.fromLTWH(0, 0, size.width, size.height - toothHeight),
-        paint,
-      );
-      // Teeth cut from background color
-      final path = Path();
-      path.moveTo(0, size.height);
-      for (int i = 0; i < toothCount; i++) {
-        final x = i * toothWidth;
-        path.lineTo(x + toothWidth / 2, size.height - toothHeight);
-        path.lineTo(x + toothWidth, size.height);
-      }
-      path.lineTo(size.width, 0);
-      path.lineTo(0, 0);
-      path.close();
-      canvas.drawPath(path, bgPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// ─── Receipt Top ──────────────────────────────────────────────────────────────
-
-class _ReceiptTop extends StatelessWidget {
-  final OrderModel order;
-  final Color statusColor;
-
-  const _ReceiptTop({required this.order, required this.statusColor});
+class _PaperSection extends StatelessWidget {
+  final Widget child;
+  final BorderRadius borderRadius;
+  const _PaperSection({required this.child, required this.borderRadius});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
-      child: Column(
-        children: [
-          // Store logo / icon
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: ColorTheme.primaryColor.withOpacity(0.08),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.storefront_rounded,
-              color: ColorTheme.primaryColor,
-              size: 26,
-            ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFEFA),
+        borderRadius: borderRadius,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.10),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(height: 10),
-
-          // Store name
-          const Text(
-            'WARTEG BAROKAH',
-            style: TextStyle(
-              fontFamily: 'Courier',
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 3,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            'Jl. Manunggal No. 17',
-            style: TextStyle(
-              fontFamily: 'Courier',
-              fontSize: 10,
-              letterSpacing: 1,
-              color: Colors.grey.shade500,
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Dashed divider
-          _DashedDivider(),
-          const SizedBox(height: 12),
-
-          // Order ID & Date row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'NO ORDER',
-                    style: TextStyle(
-                      fontFamily: 'Courier',
-                      fontSize: 9,
-                      letterSpacing: 2,
-                      color: Colors.grey.shade400,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    order.id.length > 18
-                        ? order.id.substring(0, 18)
-                        : order.id,
-                    style: const TextStyle(
-                      fontFamily: 'Courier',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'TANGGAL',
-                    style: TextStyle(
-                      fontFamily: 'Courier',
-                      fontSize: 9,
-                      letterSpacing: 2,
-                      color: Colors.grey.shade400,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    DateFormat('dd MMM yyyy, HH:mm').format(order.createdAt),
-                    style: const TextStyle(
-                      fontFamily: 'Courier',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Status pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: statusColor.withOpacity(0.3)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: statusColor,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  order.status.label.toUpperCase(),
-                  style: TextStyle(
-                    fontFamily: 'Courier',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.5,
-                    color: statusColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
         ],
       ),
+      child: child,
     );
   }
 }
 
-// ─── Receipt Body ─────────────────────────────────────────────────────────────
+// ─── Tear Edge ────────────────────────────────────────────────────────────────
 
-class _ReceiptBody extends StatelessWidget {
+class _TearEdgePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paperPaint = Paint()..color = const Color(0xFFFFFEFA);
+    final bgPaint = Paint()..color = const Color(0xFFD6D3C8);
+
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, 6), paperPaint);
+
+    const tw = 8.0;
+    const th = 6.0;
+    final count = (size.width / tw).ceil() + 1;
+    final path = Path()..moveTo(0, th);
+    for (int i = 0; i < count; i++) {
+      final x = i * tw.toDouble();
+      path.lineTo(x + tw / 2, 0);
+      path.lineTo(x + tw, th);
+    }
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+    canvas.drawPath(path, bgPaint);
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
+}
+
+// ─── Main Receipt Content ─────────────────────────────────────────────────────
+
+class _ReceiptContent extends StatelessWidget {
   final OrderModel order;
-  const _ReceiptBody({required this.order});
+  final Color statusColor;
+  final String mono;
+
+  const _ReceiptContent({
+    required this.order,
+    required this.statusColor,
+    required this.mono,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+    final date = DateFormat('dd/MM/yy-HH:mm').format(order.createdAt);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Info Pesanan ───────────────────────────────────────────
-          _ReceiptSectionLabel(label: 'INFO PESANAN'),
-          _ReceiptInfoRow(
-            label: 'Metode Bayar',
-            value: order.paymentMethod.name,
-          ),
-          _ReceiptInfoRow(
-            label: 'Tipe Pengiriman',
-            value: order.isPickup ? 'Ambil Sendiri' : 'Diantar',
-          ),
-          if (!order.isPickup)
-            _ReceiptInfoRow(
-              label: 'Alamat',
-              value: order.address.fullAddress,
-            ),
-          const SizedBox(height: 4),
-
-          // ── Daftar Pesanan ─────────────────────────────────────────
-          _DashedDivider(),
-          _ReceiptSectionLabel(label: 'DAFTAR PESANAN'),
-
-          // Header row
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
+          // ── Store Header ─────────────────────────────────────────
+          Center(
+            child: Column(
               children: [
-                Expanded(
-                  child: Text(
-                    'ITEM',
-                    style: TextStyle(
-                      fontFamily: 'Courier',
-                      fontSize: 9,
-                      letterSpacing: 2,
-                      color: Colors.grey.shade400,
-                    ),
+                Text(
+                  'WARTEG BAROKAH',
+                  style: TextStyle(
+                    fontFamily: mono,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                    color: Colors.black87,
                   ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'JL. MANUNGGAL NO.17',
+                  style: TextStyle(
+                    fontFamily: mono,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
                 Text(
-                  'QTY',
+                  'KOTA BANDUNG, JAWA BARAT',
                   style: TextStyle(
-                    fontFamily: 'Courier',
-                    fontSize: 9,
-                    letterSpacing: 2,
-                    color: Colors.grey.shade400,
+                    fontFamily: mono,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
+                    color: Colors.black87,
                   ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 90,
-                  child: Text(
-                    'HARGA',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontFamily: 'Courier',
-                      fontSize: 9,
-                      letterSpacing: 2,
-                      color: Colors.grey.shade400,
-                    ),
-                  ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
 
-          // Items
-          ...order.items.map((item) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.menuName,
-                        style: const TextStyle(
-                          fontFamily: 'Courier',
-                          fontSize: 12,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '${item.quantity}x',
-                      style: TextStyle(
-                        fontFamily: 'Courier',
-                        fontSize: 12,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 90,
-                      child: Text(
-                        'Rp ${NumberFormat('#,###').format(item.totalHarga)}',
-                        textAlign: TextAlign.right,
-                        style: const TextStyle(
-                          fontFamily: 'Courier',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )),
-
-          const SizedBox(height: 8),
-          _DashedDivider(),
-          const SizedBox(height: 8),
-
-          // ── Ringkasan Biaya ────────────────────────────────────────
-          _CostLine(label: 'Subtotal', value: order.subtotal),
-          _CostLine(label: 'Ongkos Kirim', value: order.ongkir),
-          if (order.discount > 0)
-            _CostLine(
-              label: 'Diskon',
-              value: -order.discount,
-              isDiscount: true,
-            ),
-
           const SizedBox(height: 10),
+          _Line(mono: mono),
+          const SizedBox(height: 6),
 
-          // Total
+          // ── Transaction Meta ─────────────────────────────────────
+          Text(
+            '$date/${order.id}',
+            style: TextStyle(
+              fontFamily: mono,
+              fontSize: 9,
+              color: Colors.black45,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 2),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'TOTAL',
-                style: TextStyle(
-                  fontFamily: 'Courier',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                  color: Colors.black87,
-                ),
+              Text(
+                order.isPickup ? 'AMBIL SENDIRI' : 'DIANTAR',
+                style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black45),
               ),
               Text(
-                'Rp ${NumberFormat('#,###').format(order.total)}',
-                style: TextStyle(
-                  fontFamily: 'Courier',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: ColorTheme.primaryColor,
-                  letterSpacing: 0.5,
-                ),
+                order.paymentMethod.name.toUpperCase(),
+                style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black45),
               ),
             ],
           ),
-
-          // Catatan penjual
-          if (order.sellerNote != null && order.sellerNote!.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _DashedDivider(),
-            const SizedBox(height: 8),
+          if (!order.isPickup) ...[
+            const SizedBox(height: 2),
             Text(
-              'CATATAN',
-              style: TextStyle(
-                fontFamily: 'Courier',
-                fontSize: 9,
-                letterSpacing: 2,
-                color: Colors.grey.shade400,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              order.sellerNote!,
-              style: TextStyle(
-                fontFamily: 'Courier',
-                fontSize: 11,
-                color: Colors.grey.shade600,
-              ),
+              order.address.fullAddress.toUpperCase(),
+              style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black45),
             ),
           ],
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 6),
+          _Line(mono: mono),
+          const SizedBox(height: 6),
+
+          // ── Column Headers ───────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: Text('NAMA ITEM',
+                    style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black38)),
+              ),
+              SizedBox(
+                width: 28,
+                child: Text('QTY',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black38)),
+              ),
+              SizedBox(
+                width: 56,
+                child: Text('HARGA',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black38)),
+              ),
+              SizedBox(
+                width: 62,
+                child: Text('TOTAL',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black38)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+
+          // ── Items ────────────────────────────────────────────────
+          ...order.items.expand((item) {
+            final rows = <Widget>[];
+
+            // Baris utama: nama item
+            rows.add(Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.menuName.toUpperCase(),
+                      style: TextStyle(
+                        fontFamily: mono,
+                        fontSize: 11,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 28,
+                    child: Text('${item.quantity}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontFamily: mono, fontSize: 11, color: Colors.black87)),
+                  ),
+                  SizedBox(
+                    width: 56,
+                    child: Text(NumberFormat('#,###').format(item.basePrice),
+                        textAlign: TextAlign.right,
+                        style: TextStyle(fontFamily: mono, fontSize: 11, color: Colors.black87)),
+                  ),
+                  SizedBox(
+                    width: 62,
+                    child: Text(NumberFormat('#,###').format(item.basePrice * item.quantity),
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                            fontFamily: mono,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87)),
+                  ),
+                ],
+              ),
+            ));
+
+            // Baris per add on
+            for (final addOn in item.addOns) {
+              rows.add(Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Text(
+                        '+ ${addOn.name}',
+                        style: TextStyle(
+                          fontFamily: mono,
+                          fontSize: 10,
+                          color: Colors.black45,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 28,
+                    child: Text('${item.quantity}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontFamily: mono, fontSize: 10, color: Colors.black38)),
+                  ),
+                  SizedBox(
+                    width: 56,
+                    child: Text(NumberFormat('#,###').format(addOn.price),
+                        textAlign: TextAlign.right,
+                        style: TextStyle(fontFamily: mono, fontSize: 10, color: Colors.black45)),
+                  ),
+                  SizedBox(
+                    width: 62,
+                    child: Text(NumberFormat('#,###').format(addOn.price * item.quantity),
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                            fontFamily: mono,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black45)),
+                  ),
+                ],
+              ));
+            }
+            rows.add(const SizedBox(height: 4));
+            return rows;
+          }).toList(),
+
+          const SizedBox(height: 6),
+          _Line(mono: mono),
+          const SizedBox(height: 6),
+
+          _CostLine(label: 'SUBTOTAL', value: order.subtotal, mono: mono),
+          _CostLine(label: 'ONGKOS KIRIM', value: order.ongkir, mono: mono),
+          if (order.discount > 0)
+            _CostLine(label: 'DISKON', value: -order.discount, mono: mono, isDiscount: true),
+
+          const SizedBox(height: 6),
+          _Line(mono: mono),
+          const SizedBox(height: 6),
+
+          _CostLine(
+            label: 'TOTAL BELANJA',
+            value: order.total,
+            mono: mono,
+            isBold: true,
+            fontSize: 13,
+          ),
+
+          const SizedBox(height: 8),
+          _Line(mono: mono),
+          const SizedBox(height: 18),
+
+          // ── Status ───────────────────────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text('STATUS          : ',
+                  style: TextStyle(fontFamily: mono, fontSize: 11, color: Colors.black45)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(color: statusColor.withOpacity(0.4)),
+                ),
+                child: Text(
+                  order.status.label.toUpperCase(),
+                  style: TextStyle(
+                    fontFamily: mono,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          if (order.sellerNote != null && order.sellerNote!.isNotEmpty) ...[
+            const SizedBox(height: 5),
+            Text(
+              'CATATAN         : ${order.sellerNote!.toUpperCase()}',
+              style: TextStyle(fontFamily: mono, fontSize: 10, color: Colors.black45),
+            ),
+          ],
+
+          const SizedBox(height: 8),
         ],
       ),
     );
   }
 }
 
-// ─── Receipt Bottom (barcode) ─────────────────────────────────────────────────
+// ─── Receipt Stub ─────────────────────────────────────────────────────────────
 
-class _ReceiptBottom extends StatelessWidget {
+class _ReceiptStub extends StatelessWidget {
   final String orderId;
-  const _ReceiptBottom({required this.orderId});
+  final DateTime createdAt;
+  final String mono;
+
+  const _ReceiptStub({
+    required this.orderId,
+    required this.createdAt,
+    required this.mono,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
       child: Column(
         children: [
-          // Barcode visual
           SizedBox(
-            height: 44,
+            height: 48,
             child: CustomPaint(
-              size: const Size(double.infinity, 44),
+              size: const Size(double.infinity, 48),
               painter: _BarcodePainter(),
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            orderId.replaceAll('-', ' ').toUpperCase(),
+            orderId.toUpperCase(),
+            style: TextStyle(fontFamily: mono, fontSize: 8, letterSpacing: 2, color: Colors.black38),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          _Line(mono: mono, dashed: false),
+          const SizedBox(height: 10),
+          Text(
+            '*** TERIMA KASIH SUDAH MEMESAN ***',
             style: TextStyle(
-              fontFamily: 'Courier',
-              fontSize: 9,
-              letterSpacing: 3,
-              color: Colors.grey.shade400,
+              fontFamily: mono,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              color: Colors.black54,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           Text(
-            '— Terima kasih sudah memesan! —',
-            style: TextStyle(
-              fontFamily: 'Courier',
-              fontSize: 10,
-              letterSpacing: 1,
-              color: Colors.grey.shade400,
-            ),
+            DateFormat('dd MMM yyyy, HH:mm').format(createdAt),
+            style: TextStyle(fontFamily: mono, fontSize: 9, color: Colors.black38, letterSpacing: 0.5),
             textAlign: TextAlign.center,
           ),
         ],
@@ -581,17 +777,20 @@ class _BarcodePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.black87;
-    final widths = [2, 1, 3, 1, 2, 1, 1, 3, 2, 1, 2, 2, 1, 3, 1, 2, 1, 1, 2, 3, 1, 2, 1, 2, 3, 1, 1, 2, 1, 3, 2, 1, 2, 1, 1, 3, 2, 1];
-    double x = 0;
+    final widths = [
+      2,1,3,1,2,1,1,3,2,1,2,2,1,3,1,2,1,1,2,3,
+      1,2,1,2,3,1,1,2,1,3,2,1,2,1,1,3,2,1,3,1,
+      2,1,2,3,1,1,2,1,3,2,1,2,1,1,3,2,1,3,1,2,
+    ];
     final totalWidth = widths.fold(0, (a, b) => a + b).toDouble();
     final scale = size.width / totalWidth;
-
+    double x = 0;
     for (int i = 0; i < widths.length; i++) {
       final w = widths[i] * scale;
       if (i.isEven) {
-        final height = i % 6 == 0 ? size.height : size.height * 0.85;
+        final h = (i % 8 == 0) ? size.height : size.height * 0.82;
         canvas.drawRect(
-          Rect.fromLTWH(x, size.height - height, w - 0.8, height),
+          Rect.fromLTWH(x, size.height - h, (w - 0.8).clamp(0.5, w), h),
           paint,
         );
       }
@@ -600,26 +799,30 @@ class _BarcodePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(_) => false;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-class _DashedDivider extends StatelessWidget {
+class _Line extends StatelessWidget {
+  final String mono;
+  final bool dashed;
+  const _Line({required this.mono, this.dashed = true});
+
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      const dashWidth = 6.0;
-      const dashSpace = 4.0;
-      final count = (constraints.maxWidth / (dashWidth + dashSpace)).floor();
+    if (!dashed) return const Divider(height: 1, color: Colors.black26);
+    return LayoutBuilder(builder: (ctx, c) {
+      const dw = 5.0, gap = 3.0;
+      final n = (c.maxWidth / (dw + gap)).floor();
       return Row(
         children: List.generate(
-          count,
+          n,
           (_) => Container(
-            width: dashWidth,
+            width: dw,
             height: 1,
-            margin: const EdgeInsets.only(right: dashSpace),
-            color: Colors.grey.shade200,
+            margin: const EdgeInsets.only(right: gap),
+            color: Colors.black26,
           ),
         ),
       );
@@ -627,112 +830,56 @@ class _DashedDivider extends StatelessWidget {
   }
 }
 
-class _ReceiptSectionLabel extends StatelessWidget {
-  final String label;
-  const _ReceiptSectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontFamily: 'Courier',
-          fontSize: 9,
-          letterSpacing: 2.5,
-          color: Colors.grey.shade400,
-        ),
-      ),
-    );
-  }
-}
-
-class _ReceiptInfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _ReceiptInfoRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Courier',
-                fontSize: 11,
-                color: Colors.grey.shade500,
-              ),
-            ),
-          ),
-          const Text(
-            ': ',
-            style: TextStyle(
-              fontFamily: 'Courier',
-              fontSize: 11,
-              color: Colors.grey,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontFamily: 'Courier',
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _CostLine extends StatelessWidget {
   final String label;
   final int value;
+  final String mono;
   final bool isDiscount;
+  final bool isBold;
+  final double fontSize;
 
   const _CostLine({
     required this.label,
     required this.value,
+    required this.mono,
     this.isDiscount = false,
+    this.isBold = false,
+    this.fontSize = 11,
   });
 
   @override
   Widget build(BuildContext context) {
     final display = isDiscount
-        ? '- Rp ${NumberFormat('#,###').format(value.abs())}'
-        : 'Rp ${NumberFormat('#,###').format(value)}';
+        ? '(${NumberFormat('#,###').format(value.abs())})'
+        : NumberFormat('#,###').format(value);
+    final color = isDiscount ? const Color(0xFF16A34A) : Colors.black87;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 1.5),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Courier',
-              fontSize: 12,
-              color: Colors.grey.shade500,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: mono,
+                fontSize: fontSize,
+                color: isBold ? Colors.black87 : Colors.black54,
+                fontWeight: isBold ? FontWeight.w900 : FontWeight.normal,
+                letterSpacing: 0.3,
+              ),
             ),
           ),
+          Text(': ',
+              style: TextStyle(fontFamily: mono, fontSize: fontSize, color: Colors.black38)),
           Text(
             display,
             style: TextStyle(
-              fontFamily: 'Courier',
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: isDiscount ? const Color(0xFF16A34A) : Colors.black87,
+              fontFamily: mono,
+              fontSize: fontSize,
+              fontWeight: isBold ? FontWeight.w900 : FontWeight.w600,
+              color: color,
+              letterSpacing: 0.3,
             ),
           ),
         ],

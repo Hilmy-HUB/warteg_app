@@ -1,3 +1,4 @@
+// order_page.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,7 +27,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
   late TabController _tabController;
   Timer? timer;
 
-  // ← Tab baru: tungguKonfirmasi disisipkan di index 1
   final List<OrderStatusModel> tabs = const [
     OrderStatusModel.bayar,
     OrderStatusModel.tungguKonfirmasi,
@@ -66,10 +66,12 @@ class _OrderPageState extends ConsumerState<OrderPage>
           const SizedBox(height: 8),
           ...orders.map(
             (o) => ListTile(
-              leading: const CircleAvatar(
+              leading: CircleAvatar(
                 backgroundColor: ColorTheme.buttonPrimary,
                 child: Icon(
-                  Icons.receipt_rounded,
+                  o.deliveryType == 'delivery'
+                      ? Icons.delivery_dining_rounded
+                      : Icons.storefront_rounded,
                   color: Colors.white,
                   size: 18,
                 ),
@@ -82,7 +84,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 ),
               ),
               subtitle: Text(
-                o.status.label,
+                '${o.deliveryType == 'delivery' ? 'Delivery' : 'Pickup'} · ${o.status.label}',
                 style: const TextStyle(fontFamily: 'Poppins', fontSize: 12),
               ),
               onTap: () {
@@ -131,6 +133,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
     super.dispose();
   }
 
+  // ✅ Hanya delivery orders untuk tab content
   List<OrderModel> getOrdersByStatus(
     List<OrderModel> allOrders,
     OrderStatusModel status,
@@ -146,7 +149,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
         return const Color(0xFF8B5CF6);
       case OrderStatusModel.diproses:
         return Colors.blue;
-      case OrderStatusModel.siapDiambil: // ← tambah
+      case OrderStatusModel.siapDiambil:
         return const Color(0xFF10B981);
       case OrderStatusModel.diantar:
         return Colors.indigo;
@@ -168,8 +171,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
     return buf.toString();
   }
 
-  // ── COD cancel helpers ───────────────────────────────────────────────────
-
   bool canCancelCOD(OrderModel order) {
     if (order.paymentMethod.name != "COD") return false;
     if (order.status != OrderStatusModel.tungguKonfirmasi) return false;
@@ -185,8 +186,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
     final seconds = (diff.inSeconds % 60).toString().padLeft(2, '0');
     return "$minutes:$seconds";
   }
-
-  // ── Order Card ───────────────────────────────────────────────────────────
 
   Widget buildOrderCard(OrderModel order) {
     final isTunggu = order.status == OrderStatusModel.tungguKonfirmasi;
@@ -225,7 +224,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
         ),
         child: Column(
           children: [
-            // Status strip
             Container(
               height: 5,
               width: double.infinity,
@@ -235,8 +233,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
               ),
             ),
             const SizedBox(height: 16),
-
-            // Header
             Row(
               children: [
                 Expanded(
@@ -270,10 +266,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 ),
               ],
             ),
-
             const SizedBox(height: 18),
-
-            // Items
             ...order.items.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 16),
@@ -287,6 +280,19 @@ class _OrderPageState extends ConsumerState<OrderPage>
                         width: 74,
                         height: 74,
                         fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 74,
+                          height: 74,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Icon(
+                            Icons.image_not_supported_rounded,
+                            color: Colors.grey.shade300,
+                            size: 28,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -332,7 +338,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                                           ),
                                         ),
                                         child: Text(
-                                          '+ $e',
+                                          '+ ${e.name}',
                                           style: const TextStyle(
                                             fontSize: 10,
                                             fontFamily: 'Poppins',
@@ -402,10 +408,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 ),
               ),
             ),
-
             const Divider(height: 30),
-
-            // Address & payment info
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -475,10 +478,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 ],
               ),
             ),
-
             const SizedBox(height: 18),
-
-            // Total
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
@@ -547,7 +547,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
                           order.id,
                           OrderStatusModel.tungguKonfirmasi,
                         );
-
                     ref
                         .read(notificationProvider.notifier)
                         .addNotification(
@@ -556,7 +555,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
                               'Pesanan #${order.id.substring(8)} menunggu konfirmasi restoran.',
                           orderId: order.id,
                         );
-
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
@@ -614,8 +612,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
                   ],
                 ),
               ),
-
-              // COD cancel timer
               if (canCancelCOD(order)) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -668,7 +664,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
               ],
             ],
 
-            // ── Diantar: lihat detail driver ─────────────────
+            // ── Diantar ─────────────────────────────────────
             if (isDiantar) ...[
               const SizedBox(height: 18),
               Container(
@@ -698,8 +694,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 ),
               ),
               const SizedBox(height: 12),
-
-              // Driver mini-card
               if (order.driver != null) ...[
                 Container(
                   padding: const EdgeInsets.all(14),
@@ -760,7 +754,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
                 ),
                 const SizedBox(height: 12),
               ],
-
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -804,8 +797,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
       ),
     );
   }
-
-  // ── COD Cancel Flow ──────────────────────────────────────────────────────
 
   Future<void> _cancelCOD(OrderModel order) async {
     final firstConfirm = await showDialog<bool>(
@@ -880,7 +871,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
 
     ref.listenManual<OrderStatusModel>(orderTabProvider, (previous, next) {
       final index = tabs.indexOf(next);
-
       if (index != -1 && _tabController.index != index) {
         _tabController.animateTo(index);
       }
@@ -900,8 +890,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
       );
     }
   }
-
-  // ── Tab Content ──────────────────────────────────────────────────────────
 
   Widget buildTabContent(OrderStatusModel status) {
     final allOrders = ref.watch(orderProvider);
@@ -979,32 +967,33 @@ class _OrderPageState extends ConsumerState<OrderPage>
           ),
         ),
         actions: [
-          // Tombol chat — tap buka list order yang bisa dichat
-          // (hanya tampil jika ada order aktif)
           Consumer(
             builder: (_, ref, __) {
-              final orders = ref
+              // ✅ Hanya delivery orders untuk tombol chat di halaman ini
+              final deliveryOrders = ref
                   .watch(orderProvider)
                   .where((o) => o.deliveryType == 'delivery')
                   .toList();
-              // Hitung total unread dari admin
-              final totalUnread = orders.fold<int>(
+
+              final totalUnread = deliveryOrders.fold<int>(
                 0,
                 (sum, o) => sum + ref.watch(unreadAdminCountProvider(o.id)),
               );
+
+              if (deliveryOrders.isEmpty) return const SizedBox.shrink();
+
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
                 child: GestureDetector(
                   onTap: () {
-                    // Jika hanya 1 order aktif, langsung buka chat
-                    // Jika lebih dari 1, tampilkan bottom sheet pilihan
-                    final activeOrders = orders
+                    final activeOrders = deliveryOrders
                         .where(
                           (o) =>
                               o.status != OrderStatusModel.selesai &&
                               o.status != OrderStatusModel.dibatalkan,
                         )
                         .toList();
+
                     if (activeOrders.length == 1) {
                       Navigator.push(
                         context,
@@ -1015,12 +1004,13 @@ class _OrderPageState extends ConsumerState<OrderPage>
                       );
                     } else if (activeOrders.isNotEmpty) {
                       _showChatOrderPicker(context, activeOrders);
-                    } else if (orders.isNotEmpty) {
-                      // Kalau semua selesai, buka order terakhir
+                    } else {
+                      // Semua selesai/batal, buka order terakhir
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => UserChatPage(order: orders.last),
+                          builder: (_) =>
+                              UserChatPage(order: deliveryOrders.last),
                         ),
                       );
                     }

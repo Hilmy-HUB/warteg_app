@@ -104,11 +104,12 @@ class AdminDashboardPage extends ConsumerWidget {
                             color: Colors.white,
                           ),
                         ),
-                        // Hanya tombol Chat Inbox
                         Consumer(
                           builder: (_, ref, __) {
-                            final orders = ref.watch(orderProvider);
-                            final totalUnread = orders.fold<int>(
+                            final allOrders = ref.watch(
+                              orderProvider,
+                            ); // ✅ ganti nama biar tidak shadow
+                            final totalUnread = allOrders.fold<int>(
                               0,
                               (sum, o) =>
                                   sum + ref.watch(unreadCountProvider(o.id)),

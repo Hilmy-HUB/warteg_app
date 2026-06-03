@@ -67,23 +67,23 @@ class _AdminChatPageState extends ConsumerState<AdminChatPage> {
   }
 
   Color _statusColor(OrderStatusModel s) => switch (s) {
-        OrderStatusModel.diproses => Colors.blue,
-        OrderStatusModel.diantar => Colors.teal,
-        OrderStatusModel.siapDiambil => const Color(0xFF10B981),
-        OrderStatusModel.selesai => ColorTheme.primaryColor,
-        OrderStatusModel.dibatalkan => Colors.red,
-        _ => Colors.orange,
-      };
+    OrderStatusModel.diproses => Colors.blue,
+    OrderStatusModel.diantar => Colors.teal,
+    OrderStatusModel.siapDiambil => const Color(0xFF10B981),
+    OrderStatusModel.selesai => ColorTheme.primaryColor,
+    OrderStatusModel.dibatalkan => Colors.red,
+    _ => Colors.orange,
+  };
 
   String _statusLabel(OrderStatusModel s) => switch (s) {
-        OrderStatusModel.tungguKonfirmasi => 'Tunggu Konfirmasi',
-        OrderStatusModel.diproses => 'Diproses',
-        OrderStatusModel.diantar => 'Diantar',
-        OrderStatusModel.siapDiambil => 'Siap Diambil',
-        OrderStatusModel.selesai => 'Selesai',
-        OrderStatusModel.dibatalkan => 'Dibatalkan',
-        _ => '-',
-      };
+    OrderStatusModel.tungguKonfirmasi => 'Tunggu Konfirmasi',
+    OrderStatusModel.diproses => 'Diproses',
+    OrderStatusModel.diantar => 'Diantar',
+    OrderStatusModel.siapDiambil => 'Siap Diambil',
+    OrderStatusModel.selesai => 'Selesai',
+    OrderStatusModel.dibatalkan => 'Dibatalkan',
+    _ => '-',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -226,10 +226,8 @@ class _AdminChatPageState extends ConsumerState<AdminChatPage> {
                       controller: _scroll,
                       padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                       itemCount: messages.length,
-                      itemBuilder: (_, i) => _ChatBubble(
-                        message: messages[i],
-                        customerName: name,
-                      ),
+                      itemBuilder: (_, i) =>
+                          _ChatBubble(message: messages[i], customerName: name),
                     ),
             ),
 
@@ -239,7 +237,10 @@ class _AdminChatPageState extends ConsumerState<AdminChatPage> {
               color: Colors.white,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 itemCount: _quickReplies.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 6),
                 itemBuilder: (_, i) => GestureDetector(
@@ -398,14 +399,43 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (message.isSystem) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Center(
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.85,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Text(
+              message.text,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 11.5,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
+
     final isAdmin = message.sender == ChatSender.admin;
     final time = DateFormat('HH:mm').format(message.createdAt);
 
     return Align(
       alignment: isAdmin ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
-        crossAxisAlignment:
-            isAdmin ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isAdmin
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 3, left: 2, right: 2),

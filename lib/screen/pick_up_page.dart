@@ -23,15 +23,13 @@ class _PickupPageState extends ConsumerState<PickupPage>
   Timer? _timer;
 
   final List<_PickupTab> tabs = const [
-    _PickupTab(label: 'Bayar', status: OrderStatusModel.bayar), // ← tambah ini
+    _PickupTab(label: 'Bayar', status: OrderStatusModel.bayar),
     _PickupTab(label: 'Menunggu', status: OrderStatusModel.tungguKonfirmasi),
     _PickupTab(label: 'Diproses', status: OrderStatusModel.diproses),
     _PickupTab(label: 'Siap Diambil', status: OrderStatusModel.siapDiambil),
     _PickupTab(label: 'Selesai', status: OrderStatusModel.selesai),
     _PickupTab(label: 'Dibatalkan', status: OrderStatusModel.dibatalkan),
   ];
-
-  // ── COD cancel helpers ───────────────────────────────────────────────────
 
   bool _canCancelCOD(OrderModel order) {
     if (order.paymentMethod.name != "COD") return false;
@@ -47,6 +45,34 @@ class _PickupPageState extends ConsumerState<PickupPage>
     final minutes = diff.inMinutes.toString().padLeft(2, '0');
     final seconds = (diff.inSeconds % 60).toString().padLeft(2, '0');
     return "$minutes:$seconds";
+  }
+
+  void _openChat(BuildContext context, List<OrderModel> allPickupOrders) {
+    if (allPickupOrders.isEmpty) return;
+
+    // Prioritas: order yang masih aktif
+    final activeOrders = allPickupOrders
+        .where(
+          (o) =>
+              o.status != OrderStatusModel.selesai &&
+              o.status != OrderStatusModel.dibatalkan,
+        )
+        .toList();
+
+    final targetOrders = activeOrders.isNotEmpty
+        ? activeOrders
+        : allPickupOrders;
+
+    if (targetOrders.length == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => UserChatPage(order: targetOrders.first),
+        ),
+      );
+    } else {
+      _showChatOrderPicker(context, targetOrders);
+    }
   }
 
   void _showChatOrderPicker(BuildContext context, List<OrderModel> orders) {
@@ -440,7 +466,7 @@ class _PickupPageState extends ConsumerState<PickupPage>
                                           ),
                                         ),
                                         child: Text(
-                                          '+ $e',
+                                          '+ ${e.name}',
                                           style: const TextStyle(
                                             fontSize: 10,
                                             fontFamily: 'Poppins',
@@ -617,6 +643,7 @@ class _PickupPageState extends ConsumerState<PickupPage>
               ),
             ),
 
+            // ── Bayar ────────────────────────────────────────
             if (order.status == OrderStatusModel.bayar) ...[
               const SizedBox(height: 18),
               Container(
@@ -654,13 +681,11 @@ class _PickupPageState extends ConsumerState<PickupPage>
                           order.id,
                           OrderStatusModel.tungguKonfirmasi,
                         );
-
                     final tungguIndex = tabs.indexWhere(
                       (t) => t.status == OrderStatusModel.tungguKonfirmasi,
                     );
                     if (tungguIndex != -1)
                       _tabController.animateTo(tungguIndex);
-
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text(
@@ -696,7 +721,7 @@ class _PickupPageState extends ConsumerState<PickupPage>
               ),
             ],
 
-            // ── Tunggu Konfirmasi Banner ─────────────────────
+            // ── Tunggu Konfirmasi ────────────────────────────
             if (isTunggu) ...[
               const SizedBox(height: 18),
               Container(
@@ -725,8 +750,6 @@ class _PickupPageState extends ConsumerState<PickupPage>
                   ],
                 ),
               ),
-
-              // ← Tambah COD cancel timer di sini
               if (_canCancelCOD(order)) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -779,7 +802,7 @@ class _PickupPageState extends ConsumerState<PickupPage>
               ],
             ],
 
-            // ── Diproses Banner ──────────────────────────────
+            // ── Diproses ──────────────────────────────────────
             if (isDiproses) ...[
               const SizedBox(height: 18),
               Container(
@@ -807,7 +830,7 @@ class _PickupPageState extends ConsumerState<PickupPage>
               ),
             ],
 
-            // ── Siap Diambil Banner + Tombol ─────────────────
+            // ── Siap Diambil ──────────────────────────────────
             if (isSiapDiambil) ...[
               const SizedBox(height: 18),
               Container(
@@ -1008,52 +1031,26 @@ class _PickupPageState extends ConsumerState<PickupPage>
           ),
         ),
         actions: [
-          // Tombol chat — tap buka list order yang bisa dichat
-          // (hanya tampil jika ada order aktif)
           Consumer(
             builder: (_, ref, __) {
-              final orders = ref
+              final pickupOrders = ref
                   .watch(orderProvider)
-                  .where((o) => o.deliveryType == 'delivery')
+                  .where((o) => o.deliveryType == 'pickup')
                   .toList();
-              // Hitung total unread dari admin
-              final totalUnread = orders.fold<int>(
+
+              // Total unread dari admin untuk semua order pickup
+              final totalUnread = pickupOrders.fold<int>(
                 0,
                 (sum, o) => sum + ref.watch(unreadAdminCountProvider(o.id)),
               );
+
+              // Tombol chat hanya tampil jika ada order pickup
+              if (pickupOrders.isEmpty) return const SizedBox.shrink();
+
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
                 child: GestureDetector(
-                  onTap: () {
-                    // Jika hanya 1 order aktif, langsung buka chat
-                    // Jika lebih dari 1, tampilkan bottom sheet pilihan
-                    final activeOrders = orders
-                        .where(
-                          (o) =>
-                              o.status != OrderStatusModel.selesai &&
-                              o.status != OrderStatusModel.dibatalkan,
-                        )
-                        .toList();
-                    if (activeOrders.length == 1) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              UserChatPage(order: activeOrders.first),
-                        ),
-                      );
-                    } else if (activeOrders.isNotEmpty) {
-                      _showChatOrderPicker(context, activeOrders);
-                    } else if (orders.isNotEmpty) {
-                      // Kalau semua selesai, buka order terakhir
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => UserChatPage(order: orders.last),
-                        ),
-                      );
-                    }
-                  },
+                  onTap: () => _openChat(context, pickupOrders),
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [

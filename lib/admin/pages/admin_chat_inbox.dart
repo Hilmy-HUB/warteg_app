@@ -15,29 +15,49 @@ class AdminChatInboxPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final orders = ref.watch(orderProvider);
 
-    final sorted =
-        [...orders]
-            .where(
-              (o) => ref.watch(chatProvider(o.id)).isNotEmpty,
-            ) // ← filter ini
-            .toList()
-          ..sort((a, b) {
-            final unreadA = ref.read(unreadCountProvider(a.id));
-            final unreadB = ref.read(unreadCountProvider(b.id));
-            if (unreadA != unreadB) return unreadB.compareTo(unreadA);
-            final msgsA = ref.read(chatProvider(a.id));
-            final msgsB = ref.read(chatProvider(b.id));
-            final lastA = msgsA.isEmpty ? a.createdAt : msgsA.last.createdAt;
-            final lastB = msgsB.isEmpty ? b.createdAt : msgsB.last.createdAt;
-            return lastB.compareTo(lastA);
-          });
+    // ── Group by phone number ──────────────────────────────
+    final Map<String, List<OrderModel>> grouped = {};
+    for (final o in orders) {
+      if (ref.watch(chatProvider(o.id)).isEmpty) continue;
+      grouped.putIfAbsent(o.address.phone, () => []).add(o);
+    }
+
+    // ── Sort: unread dulu, lalu by pesan terakhir ──────────
+    final groupedList = grouped.entries.toList()
+      ..sort((a, b) {
+        final unreadA = a.value.fold<int>(
+          0,
+          (s, o) => s + ref.read(unreadCountProvider(o.id)),
+        );
+        final unreadB = b.value.fold<int>(
+          0,
+          (s, o) => s + ref.read(unreadCountProvider(o.id)),
+        );
+        if (unreadA != unreadB) return unreadB.compareTo(unreadA);
+
+        DateTime lastA = a.value.first.createdAt;
+        DateTime lastB = b.value.first.createdAt;
+        for (final o in a.value) {
+          final msgs = ref.read(chatProvider(o.id));
+          if (msgs.isNotEmpty && msgs.last.createdAt.isAfter(lastA)) {
+            lastA = msgs.last.createdAt;
+          }
+        }
+        for (final o in b.value) {
+          final msgs = ref.read(chatProvider(o.id));
+          if (msgs.isNotEmpty && msgs.last.createdAt.isAfter(lastB)) {
+            lastB = msgs.last.createdAt;
+          }
+        }
+        return lastB.compareTo(lastA);
+      });
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            // ── Header ─────────────────────────────────────
             Container(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
               decoration: const BoxDecoration(
@@ -82,7 +102,7 @@ class AdminChatInboxPage extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  // total unread badge
+                  // Total unread badge
                   Consumer(
                     builder: (_, ref, __) {
                       final totalUnread = orders.fold<int>(
@@ -115,15 +135,17 @@ class AdminChatInboxPage extends ConsumerWidget {
               ),
             ),
 
-            // List
+            // ── List ───────────────────────────────────────
             Expanded(
-              child: sorted.isEmpty
+              child: groupedList.isEmpty
                   ? _buildEmpty()
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                      itemCount: sorted.length,
+                      itemCount: groupedList.length, // ✅ pakai groupedList
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (_, i) => _ChatInboxTile(order: sorted[i]),
+                      itemBuilder: (_, i) => _ChatInboxTile(
+                        orders: groupedList[i].value,
+                      ), // ✅ konsisten
                     ),
             ),
           ],
@@ -168,16 +190,27 @@ class AdminChatInboxPage extends ConsumerWidget {
 // ─── Tile ─────────────────────────────────────────────────────────────────────
 
 class _ChatInboxTile extends ConsumerWidget {
-  final OrderModel order;
-  const _ChatInboxTile({required this.order});
+  final List<OrderModel> orders;
+  const _ChatInboxTile({required this.orders});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final messages = ref.watch(chatProvider(order.id));
-    final unread = ref.watch(unreadCountProvider(order.id));
-    final hasMessages = messages.isNotEmpty;
-    final lastMsg = hasMessages ? messages.last : null;
-    final name = order.address.receiverName;
+    final totalUnread = orders.fold<int>(
+      0,
+      (s, o) => s + ref.watch(unreadCountProvider(o.id)),
+    );
+
+    ChatMessageModel? lastMsg;
+    for (final o in orders) {
+      final msgs = ref.watch(chatProvider(o.id));
+      if (msgs.isNotEmpty) {
+        if (lastMsg == null || msgs.last.createdAt.isAfter(lastMsg.createdAt)) {
+          lastMsg = msgs.last;
+        }
+      }
+    }
+
+    final name = orders.first.address.receiverName;
     final initials = name
         .trim()
         .split(' ')
@@ -185,16 +218,29 @@ class _ChatInboxTile extends ConsumerWidget {
         .map((e) => e[0])
         .join()
         .toUpperCase();
-    final isDelivery = order.deliveryType == 'delivery';
+    final deliveryCount = orders
+        .where((o) => o.deliveryType == 'delivery')
+        .length;
+    final pickupCount = orders.where((o) => o.deliveryType == 'pickup').length;
     final timeStr = lastMsg != null
         ? _formatTime(lastMsg.createdAt)
-        : DateFormat('d MMM').format(order.createdAt);
+        : DateFormat('d MMM').format(orders.first.createdAt);
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => AdminChatPage(order: order)),
-      ),
+      onTap: () {
+        if (orders.length == 1) {
+          // Langsung buka jika hanya 1 order
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AdminChatPage(order: orders.first),
+            ),
+          );
+        } else {
+          // Tampilkan picker jika lebih dari 1 order
+          _showOrderPicker(context, orders);
+        }
+      },
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -210,55 +256,53 @@ class _ChatInboxTile extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            // Avatar
+            // ── Avatar ──────────────────────────────────────
             Stack(
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: isDelivery
-                      ? ColorTheme.primaryColor.withOpacity(0.12)
-                      : const Color(0xFF10B981).withOpacity(0.12),
+                  backgroundColor: ColorTheme.primaryColor.withOpacity(0.12),
                   child: Text(
                     initials,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
-                      color: isDelivery
-                          ? ColorTheme.primaryColor
-                          : const Color(0xFF10B981),
+                      color: ColorTheme.primaryColor,
                     ),
                   ),
                 ),
-                // delivery/pickup dot
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: isDelivery
-                          ? Colors.orange
-                          : const Color(0xFF10B981),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: Icon(
-                      isDelivery
-                          ? Icons.delivery_dining_rounded
-                          : Icons.storefront_rounded,
-                      size: 8,
-                      color: Colors.white,
+                // Dot jumlah order jika lebih dari 1
+                if (orders.length > 1)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: ColorTheme.primaryColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${orders.length}',
+                          style: const TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
 
             const SizedBox(width: 12),
 
-            // Content
+            // ── Content ─────────────────────────────────────
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,7 +314,7 @@ class _ChatInboxTile extends ConsumerWidget {
                           name,
                           style: TextStyle(
                             fontFamily: 'Poppins',
-                            fontWeight: unread > 0
+                            fontWeight: totalUnread > 0
                                 ? FontWeight.w700
                                 : FontWeight.w600,
                             fontSize: 13.5,
@@ -285,10 +329,10 @@ class _ChatInboxTile extends ConsumerWidget {
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 10,
-                          color: unread > 0
+                          color: totalUnread > 0
                               ? ColorTheme.primaryColor
                               : Colors.grey.shade400,
-                          fontWeight: unread > 0
+                          fontWeight: totalUnread > 0
                               ? FontWeight.w600
                               : FontWeight.normal,
                         ),
@@ -296,20 +340,43 @@ class _ChatInboxTile extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 3),
+
+                  // ── Tag delivery / pickup ──────────────────
+                  Row(
+                    children: [
+                      if (deliveryCount > 0)
+                        _buildTag(
+                          icon: Icons.delivery_dining_rounded,
+                          label: '$deliveryCount Delivery',
+                          color: Colors.orange,
+                        ),
+                      if (deliveryCount > 0 && pickupCount > 0)
+                        const SizedBox(width: 5),
+                      if (pickupCount > 0)
+                        _buildTag(
+                          icon: Icons.storefront_rounded,
+                          label: '$pickupCount Pickup',
+                          color: const Color(0xFF10B981),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+
+                  // ── Preview pesan terakhir ─────────────────
                   Row(
                     children: [
                       Expanded(
                         child: Text(
-                          hasMessages
-                              ? '${lastMsg!.sender == ChatSender.admin ? 'Anda: ' : ''}${lastMsg.text}'
-                              : 'Pesanan #${order.id.substring(8)} · ${isDelivery ? 'Delivery' : 'Pickup'}',
+                          lastMsg != null
+                              ? '${lastMsg.sender == ChatSender.admin ? 'Anda: ' : ''}${lastMsg.text}'
+                              : 'Belum ada pesan',
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
-                            color: unread > 0
+                            color: totalUnread > 0
                                 ? Colors.black54
                                 : Colors.grey.shade400,
-                            fontWeight: unread > 0
+                            fontWeight: totalUnread > 0
                                 ? FontWeight.w500
                                 : FontWeight.normal,
                           ),
@@ -317,7 +384,7 @@ class _ChatInboxTile extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (unread > 0)
+                      if (totalUnread > 0)
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 7,
@@ -328,7 +395,7 @@ class _ChatInboxTile extends ConsumerWidget {
                             shape: BoxShape.circle,
                           ),
                           child: Text(
-                            '$unread',
+                            '$totalUnread',
                             style: const TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 10,
@@ -339,6 +406,135 @@ class _ChatInboxTile extends ConsumerWidget {
                         ),
                     ],
                   ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTag({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showOrderPicker(BuildContext context, List<OrderModel> orders) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // ✅ wajib untuk DraggableScrollableSheet
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (_, scrollController) => Column(
+          children: [
+            // Handle bar — tidak ikut scroll
+            const SizedBox(height: 12),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Pilih Pesanan',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // ✅ List bisa di-scroll
+            Expanded(
+              child: ListView(
+                controller: scrollController,
+                children: [
+                  ...orders.map(
+                    (o) => ListTile(
+                      leading: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color:
+                              (o.deliveryType == 'delivery'
+                                      ? Colors.orange
+                                      : const Color(0xFF10B981))
+                                  .withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          o.deliveryType == 'delivery'
+                              ? Icons.delivery_dining_rounded
+                              : Icons.storefront_rounded,
+                          size: 18,
+                          color: o.deliveryType == 'delivery'
+                              ? Colors.orange
+                              : const Color(0xFF10B981),
+                        ),
+                      ),
+                      title: Text(
+                        '${o.deliveryType == 'delivery' ? 'Delivery' : 'Pickup'} · #${o.id.substring(8)}',
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      subtitle: Text(
+                        DateFormat('d MMM yyyy, HH:mm').format(o.createdAt),
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AdminChatPage(order: o),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),

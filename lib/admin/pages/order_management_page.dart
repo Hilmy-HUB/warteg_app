@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:warteg_app/admin/pages/admin_chat_page.dart';
 import 'package:warteg_app/model/cart_item_model.dart';
+import 'package:warteg_app/model/chat_message_model.dart';
 import 'package:warteg_app/model/driver_mode.dart';
 import 'package:warteg_app/model/order_model.dart';
 import 'package:warteg_app/model/order_status_model.dart';
@@ -39,7 +40,6 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
   Widget build(BuildContext context) {
     final orders = ref.watch(orderProvider);
 
-    // Hanya delivery
     final deliveryOrders = orders
         .where((o) => o.deliveryType == 'delivery')
         .toList();
@@ -62,7 +62,6 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
         .where((o) => o.status == OrderStatusModel.diantar)
         .toList();
 
-    // Jadi ini:
     final done = deliveryOrders
         .where((o) => o.status == OrderStatusModel.selesai)
         .toList();
@@ -76,7 +75,6 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header + Tabs ────────────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 25, 20, 0),
@@ -149,9 +147,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
                       Tab(text: 'Diproses (${processing.length})'),
                       Tab(text: 'Diantar (${delivering.length})'),
                       Tab(text: 'Selesai (${done.length})'),
-                      Tab(
-                        text: 'Dibatalkan (${cancelled.length})',
-                      ), // tambah ini
+                      Tab(text: 'Dibatalkan (${cancelled.length})'),
                     ],
                   ),
                 ],
@@ -169,10 +165,7 @@ class _OrderManagementPageState extends ConsumerState<OrderManagementPage>
                   ),
                   _OrderList(orders: delivering, mode: _CardMode.delivering),
                   _OrderList(orders: done, mode: _CardMode.done),
-                  _OrderList(
-                    orders: cancelled,
-                    mode: _CardMode.done,
-                  ), // tambah ini
+                  _OrderList(orders: cancelled, mode: _CardMode.done),
                 ],
               ),
             ),
@@ -278,8 +271,10 @@ class _OrderCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // ✅ BERSIH — tidak ada auto-chat di sini
     final notifier = ref.read(orderProvider.notifier);
     final notifNotifier = ref.read(notificationProvider.notifier);
+    final chatNotifier = ref.read(chatProvider(order.id).notifier);
     final statusColor = _statusColor(order.status);
 
     return Container(
@@ -316,7 +311,6 @@ class _OrderCard extends ConsumerWidget {
                 // ── Header ──────────────────────────────────
                 Row(
                   children: [
-                    // Taruh di dalam Row header, setelah status badge
                     GestureDetector(
                       onTap: () => Navigator.push(
                         context,
@@ -340,7 +334,6 @@ class _OrderCard extends ConsumerWidget {
                                 color: ColorTheme.primaryColor,
                               ),
                             ),
-                            // Unread badge
                             Consumer(
                               builder: (_, ref, __) {
                                 final unread = ref.watch(
@@ -471,14 +464,12 @@ class _OrderCard extends ConsumerWidget {
                 Divider(color: Colors.grey.shade100, thickness: 1),
                 const SizedBox(height: 10),
 
-                // Items
                 ...order.items.map((item) => _ItemRow(item: item)),
 
                 const SizedBox(height: 10),
                 Divider(color: Colors.grey.shade100, thickness: 1),
                 const SizedBox(height: 10),
 
-                // Pricing
                 if (order.ongkir > 0)
                   _PriceRow(
                     label: 'Ongkos Kirim',
@@ -591,11 +582,35 @@ class _OrderCard extends ConsumerWidget {
                               confirmColor: ColorTheme.primaryColor,
                             );
                             if (confirm != true) return;
-                            await notifier.acceptOrder(order.id);
+                            await notifier.updateOrderStatus(
+                              order.id,
+                              OrderStatusModel.dibatalkan,
+                            );
+                            // ✅ Auto-chat terima
+                            chatNotifier.sendMessage(
+                              '✅ Pesanan kamu telah diterima! Sedang kami siapkan dan akan segera diantar.',
+                              ChatSender.admin,
+                            );
                             notifNotifier.addNotification(
                               title: 'Pesanan Diterima ✅',
                               message:
                                   'Pesanan #${order.id.substring(8)} sedang diproses oleh restoran.',
+                              orderId: order.id,
+                            );
+                            if (confirm != true) return;
+                            await notifier.updateOrderStatus(
+                              order.id,
+                              OrderStatusModel.dibatalkan,
+                            );
+                            // ✅ Tambahkan ini
+                            chatNotifier.sendMessage(
+                              '❌ Maaf, pesanan kamu tidak dapat kami terima saat ini. Silakan coba lagi nanti.',
+                              ChatSender.admin,
+                            );
+                            notifNotifier.addNotification(
+                              title: 'Pesanan Ditolak',
+                              message:
+                                  'Maaf, pesanan #${order.id.substring(8)} tidak dapat kami proses saat ini.',
                               orderId: order.id,
                             );
                           },
@@ -653,6 +668,11 @@ class _OrderCard extends ConsumerWidget {
                           order.id,
                           OrderStatusModel.diantar,
                           driver,
+                        );
+                        // ✅ Auto-chat dijalan
+                        chatNotifier.sendMessage(
+                          '🛵 Pesanan kamu sedang dalam perjalanan! Driver: ${driver.name} (${driver.vehicleNumber}).',
+                          ChatSender.admin,
                         );
                         notifNotifier.addNotification(
                           title: 'Pesanan Dalam Perjalanan 🛵',
@@ -942,7 +962,7 @@ class _ItemRow extends StatelessWidget {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              '+ $a',
+                              '+ ${a.name}',
                               style: const TextStyle(
                                 fontFamily: 'Poppins',
                                 fontSize: 10,
