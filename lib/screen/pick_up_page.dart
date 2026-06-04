@@ -456,7 +456,7 @@ class _PickupPageState extends ConsumerState<PickupPage>
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(18),
-                      child: Image.network(
+                      child: Image.asset(
                         item.image,
                         width: 74,
                         height: 74,

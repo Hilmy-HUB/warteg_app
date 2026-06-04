@@ -37,7 +37,7 @@ class MenuCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: menu.imageUrl != null
                     ? (menu.imageUrl!.startsWith('http')
-                        ? Image.network(
+                        ? Image.asset(
                             menu.imageUrl!,
                             height: 140,
                             width: double.infinity,

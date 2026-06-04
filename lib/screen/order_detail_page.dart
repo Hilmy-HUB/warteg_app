@@ -864,7 +864,7 @@ class _ItemCard extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
+            child: Image.asset(
               item.image,
               width: 78,
               height: 78,

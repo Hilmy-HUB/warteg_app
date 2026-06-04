@@ -64,7 +64,7 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
       );
     }
     if (url.startsWith('http')) {
-      return Image.network(url,
+      return Image.asset(url,
           width: double.infinity, height: 380, fit: BoxFit.cover);
     }
     return Image.asset(url,
