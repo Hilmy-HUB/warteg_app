@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:warteg_app/model/order_status_model.dart';
 import 'package:warteg_app/provider/order_provider.dart';
 import 'package:warteg_app/provider/purchase_history_provider.dart';
 import 'package:warteg_app/controller/auth_controller.dart';
@@ -24,15 +25,28 @@ class PurchaseStatisticsPage extends ConsumerWidget {
   static String _formatDate(DateTime? date) {
     if (date == null) return '-';
     const months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final orders = ref.watch(orderProvider);
+    final allOrders = ref.watch(orderProvider);
+    final orders = allOrders
+        .where((o) => o.status == OrderStatusModel.selesai)
+        .toList();
     final purchaseHistory = ref.watch(purchaseHistoryProvider);
     final user = ref.watch(currentUserProvider);
 
@@ -43,9 +57,7 @@ class PurchaseStatisticsPage extends ConsumerWidget {
     // Tanggal akun dibuat: ambil order paling lama sebagai proxy,
     // atau pakai createdAt dari user jika tersedia
     final DateTime? accountSince = orders.isNotEmpty
-        ? orders
-            .map((o) => o.createdAt)
-            .reduce((a, b) => a.isBefore(b) ? a : b)
+        ? orders.map((o) => o.createdAt).reduce((a, b) => a.isBefore(b) ? a : b)
         : null;
 
     // ── Menu favorit: purchaseHistory sudah Map<String, int> ────────────────
@@ -63,7 +75,9 @@ class PurchaseStatisticsPage extends ConsumerWidget {
       }).length;
       return _MonthlyData(month: month, count: count);
     });
-    final maxMonthlyCount = monthlyData.map((m) => m.count).fold(0, (a, b) => a > b ? a : b);
+    final maxMonthlyCount = monthlyData
+        .map((m) => m.count)
+        .fold(0, (a, b) => a > b ? a : b);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7F4),
@@ -100,10 +114,7 @@ class PurchaseStatisticsPage extends ConsumerWidget {
                   // ── Grafik Bulanan ─────────────────────────────────────
                   _SectionLabel(label: 'Aktivitas 6 Bulan Terakhir'),
                   const SizedBox(height: 12),
-                  _MonthlyChart(
-                    data: monthlyData,
-                    maxCount: maxMonthlyCount,
-                  ),
+                  _MonthlyChart(data: monthlyData, maxCount: maxMonthlyCount),
 
                   const SizedBox(height: 24),
 
@@ -300,10 +311,7 @@ class _HeroSummaryCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 1),
             child: Row(
               children: [
-                _HeroStat(
-                  label: 'Total Pesanan',
-                  value: '$totalOrders',
-                ),
+                _HeroStat(label: 'Total Pesanan', value: '$totalOrders'),
                 Container(
                   width: 1,
                   height: 48,
@@ -326,8 +334,11 @@ class _HeroSummaryCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today_rounded,
-                    color: Colors.white70, size: 14),
+                const Icon(
+                  Icons.calendar_today_rounded,
+                  color: Colors.white70,
+                  size: 14,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   accountSince != null
@@ -353,10 +364,7 @@ class _HeroStat extends StatelessWidget {
   final String label;
   final String value;
 
-  const _HeroStat({
-    required this.label,
-    required this.value,
-  });
+  const _HeroStat({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -529,8 +537,18 @@ class _MonthlyChart extends StatelessWidget {
   const _MonthlyChart({required this.data, required this.maxCount});
 
   static const _shortMonths = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-    'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Ags',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
   ];
 
   @override
@@ -576,11 +594,10 @@ class _MonthlyChart extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: data.map((item) {
-                final ratio = maxCount == 0
-                    ? 0.0
-                    : item.count / maxCount;
+                final ratio = maxCount == 0 ? 0.0 : item.count / maxCount;
                 final barHeight = 80.0 * ratio;
-                final isCurrentMonth = item.month.year == DateTime.now().year &&
+                final isCurrentMonth =
+                    item.month.year == DateTime.now().year &&
                     item.month.month == DateTime.now().month;
 
                 return Expanded(
@@ -729,7 +746,9 @@ class _FavoriteMenuCard extends StatelessWidget {
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(20),
@@ -781,7 +800,11 @@ class _EmptyFavorite extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(Icons.restaurant_outlined, size: 48, color: Colors.grey.shade300),
+          Icon(
+            Icons.restaurant_outlined,
+            size: 48,
+            color: Colors.grey.shade300,
+          ),
           const SizedBox(height: 12),
           Text(
             'Belum ada riwayat pembelian',
@@ -830,17 +853,12 @@ class _AccountSinceCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            const Color(0xFFF0FDF4),
-            const Color(0xFFECFDF5),
-          ],
+          colors: [const Color(0xFFF0FDF4), const Color(0xFFECFDF5)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF10B981).withOpacity(0.2),
-        ),
+        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.2)),
       ),
       child: Row(
         children: [

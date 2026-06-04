@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,7 +24,11 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   // REGISTER
   // ======================================
 
-  Future<String?> register(String username, String email, String password) async {
+  Future<String?> register(
+    String username,
+    String email,
+    String password,
+  ) async {
     state = const AsyncLoading();
     final result = await _service.register(
       username: username,
@@ -38,7 +44,7 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   // ======================================
 
   // 🔐 Hardcode admin credentials
-  static const String _adminEmail    = 'admin@warteg.com';
+  static const String _adminEmail = 'admin@warteg.com';
   static const String _adminPassword = 'admin123';
 
   Future<String?> login(String email, String password) async {
@@ -50,33 +56,44 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
 
       // ✅ Cek apakah admin
       if (email == _adminEmail && password == _adminPassword) {
-        role     = 'admin';
+        role = 'admin';
         username = 'Admin';
       } else {
-        // ✅ Cek user biasa via AuthService
         final result = await _service.login(email: email, password: password);
-        if (result != null) return result; // return pesan error
+        if (result != null) return result;
 
-        role     = 'user';
-        username = email.split('@')[0]; // ambil nama dari email
+        role = 'user';
+
+        // Ambil username dari data register
+        final prefsTemp = await SharedPreferences.getInstance();
+        final usersString = prefsTemp.getString('users');
+        username = email.split('@')[0]; // fallback jika data tidak ditemukan
+
+        if (usersString != null) {
+          final List users = jsonDecode(usersString);
+          final userData = users.firstWhere(
+            (u) => u['email'] == email,
+            orElse: () => null,
+          );
+          if (userData != null) username = userData['username'] ?? username;
+        }
       }
 
       // Simpan ke SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLogin',   true);
-      await prefs.setString('email',    email);
+      await prefs.setBool('isLogin', true);
+      await prefs.setString('email', email);
       await prefs.setString('username', username);
-      await prefs.setString('role',     role);
+      await prefs.setString('role', role);
 
       // Update provider
       ref.read(currentUserProvider.notifier).state = {
         'username': username,
-        'email':    email,
-        'role':     role,
+        'email': email,
+        'role': role,
       };
 
       return null; // sukses
-
     } catch (e) {
       return e.toString();
     } finally {

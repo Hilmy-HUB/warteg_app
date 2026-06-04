@@ -743,17 +743,8 @@ class _ReceiptContent extends StatelessWidget {
 
           // ── Status ───────────────────────────────────────────────
           Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                'STATUS : ',
-                style: TextStyle(
-                  fontFamily: mono,
-                  fontSize: 11,
-                  color: Colors.black45,
-                ),
-              ),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -930,6 +921,7 @@ class _BarcodePainter extends CustomPainter {
       3,
       1,
       2,
+      0,
     ];
     final totalWidth = widths.fold(0, (a, b) => a + b).toDouble();
     final scale = size.width / totalWidth;
@@ -1009,7 +1001,9 @@ class _CostLine extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 1.5),
       child: Row(
         children: [
-          Expanded(
+          // Label rata kiri, lebar tetap
+          SizedBox(
+            width: 110,
             child: Text(
               label,
               style: TextStyle(
@@ -1021,6 +1015,8 @@ class _CostLine extends StatelessWidget {
               ),
             ),
           ),
+
+          // Titik dua selalu di posisi sama
           Text(
             ': ',
             style: TextStyle(
@@ -1029,14 +1025,19 @@ class _CostLine extends StatelessWidget {
               color: Colors.black38,
             ),
           ),
-          Text(
-            display,
-            style: TextStyle(
-              fontFamily: mono,
-              fontSize: fontSize,
-              fontWeight: isBold ? FontWeight.w900 : FontWeight.w600,
-              color: color,
-              letterSpacing: 0.3,
+
+          // Nilai rata kanan
+          Expanded(
+            child: Text(
+              display,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontFamily: mono,
+                fontSize: fontSize,
+                fontWeight: isBold ? FontWeight.w900 : FontWeight.w600,
+                color: color,
+                letterSpacing: 0.3,
+              ),
             ),
           ),
         ],

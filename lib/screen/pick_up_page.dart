@@ -48,9 +48,7 @@ class _PickupPageState extends ConsumerState<PickupPage>
   }
 
   void _openChat(BuildContext context, List<OrderModel> allPickupOrders) {
-    if (allPickupOrders.isEmpty) return;
-
-    // Prioritas: order yang masih aktif
+    // Hanya order aktif yang bisa di-chat
     final activeOrders = allPickupOrders
         .where(
           (o) =>
@@ -59,26 +57,40 @@ class _PickupPageState extends ConsumerState<PickupPage>
         )
         .toList();
 
-    final targetOrders = activeOrders.isNotEmpty
-        ? activeOrders
-        : allPickupOrders;
+    if (activeOrders.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Tidak ada pesanan aktif untuk di-chat',
+            style: TextStyle(fontFamily: 'Poppins', fontSize: 13),
+          ),
+          backgroundColor: Colors.grey.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        ),
+      );
+      return;
+    }
 
-    if (targetOrders.length == 1) {
+    if (activeOrders.length == 1) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => UserChatPage(order: targetOrders.first),
+          builder: (_) => UserChatPage(order: activeOrders.first),
         ),
       );
     } else {
-      _showChatOrderPicker(context, targetOrders);
+      _showChatOrderPicker(context, activeOrders);
     }
   }
 
   void _showChatOrderPicker(BuildContext context, List<OrderModel> orders) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // ✅ tambah ini
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -230,6 +242,9 @@ class _PickupPageState extends ConsumerState<PickupPage>
         .read(orderProvider.notifier)
         .updateOrderStatus(order.id, OrderStatusModel.dibatalkan);
 
+    // Mark chat sebagai read langsung saat dibatalkan
+    ref.read(chatProvider(order.id).notifier).markAllRead();
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -259,6 +274,24 @@ class _PickupPageState extends ConsumerState<PickupPage>
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
+
+    // Mark all read untuk order pickup yang sudah selesai/batal
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _markCompletedPickupOrdersAsRead();
+    });
+  }
+
+  void _markCompletedPickupOrdersAsRead() {
+    final allOrders = ref.read(orderProvider);
+    final completedOrders = allOrders.where(
+      (o) =>
+          o.deliveryType == 'pickup' &&
+          (o.status == OrderStatusModel.selesai ||
+              o.status == OrderStatusModel.dibatalkan),
+    );
+    for (final order in completedOrders) {
+      ref.read(chatProvider(order.id).notifier).markAllRead();
+    }
   }
 
   @override
@@ -953,6 +986,9 @@ class _PickupPageState extends ConsumerState<PickupPage>
         .read(orderProvider.notifier)
         .updateOrderStatus(order.id, OrderStatusModel.selesai);
 
+    // Mark chat sebagai read langsung saat selesai
+    ref.read(chatProvider(order.id).notifier).markAllRead();
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1051,25 +1087,30 @@ class _PickupPageState extends ConsumerState<PickupPage>
           ),
         ),
         actions: [
-          Consumer(
-            builder: (_, ref, __) {
-              final pickupOrders = ref
-                  .watch(orderProvider)
-                  .where((o) => o.deliveryType == 'pickup')
-                  .toList();
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Consumer(
+              builder: (_, ref, __) {
+                final pickupOrders = ref
+                    .watch(orderProvider)
+                    .where((o) => o.deliveryType == 'pickup')
+                    .toList();
 
-              // Total unread dari admin untuk semua order pickup
-              final totalUnread = pickupOrders.fold<int>(
-                0,
-                (sum, o) => sum + ref.watch(unreadAdminCountProvider(o.id)),
-              );
+                // Hanya hitung unread dari order pickup yang masih aktif
+                final activePickupOrders = pickupOrders
+                    .where(
+                      (o) =>
+                          o.status != OrderStatusModel.selesai &&
+                          o.status != OrderStatusModel.dibatalkan,
+                    )
+                    .toList();
 
-              // Tombol chat hanya tampil jika ada order pickup
-              if (pickupOrders.isEmpty) return const SizedBox.shrink();
+                final totalUnread = activePickupOrders.fold<int>(
+                  0,
+                  (sum, o) => sum + ref.watch(unreadAdminCountProvider(o.id)),
+                );
 
-              return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: GestureDetector(
+                return GestureDetector(
                   onTap: () => _openChat(context, pickupOrders),
                   child: Stack(
                     clipBehavior: Clip.none,
@@ -1112,9 +1153,9 @@ class _PickupPageState extends ConsumerState<PickupPage>
                         ),
                     ],
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ],
         bottom: PreferredSize(

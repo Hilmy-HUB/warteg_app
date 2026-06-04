@@ -517,6 +517,7 @@ class _OrderCard extends ConsumerWidget {
                   const SizedBox(height: 16),
                   Row(
                     children: [
+                      // ── TOMBOL TOLAK ──
                       Expanded(
                         child: GestureDetector(
                           onTap: () async {
@@ -529,9 +530,14 @@ class _OrderCard extends ConsumerWidget {
                               confirmColor: Colors.red,
                             );
                             if (confirm != true) return;
+
                             await notifier.updateOrderStatus(
                               order.id,
                               OrderStatusModel.dibatalkan,
+                            );
+                            chatNotifier.sendMessage(
+                              '❌ Maaf, pesanan kamu tidak dapat kami terima saat ini. Silakan coba lagi nanti.',
+                              ChatSender.admin,
                             );
                             notifNotifier.addNotification(
                               title: 'Pesanan Ditolak',
@@ -569,7 +575,10 @@ class _OrderCard extends ConsumerWidget {
                           ),
                         ),
                       ),
+
                       const SizedBox(width: 10),
+
+                      // ── TOMBOL TERIMA ──
                       Expanded(
                         child: GestureDetector(
                           onTap: () async {
@@ -582,11 +591,8 @@ class _OrderCard extends ConsumerWidget {
                               confirmColor: ColorTheme.primaryColor,
                             );
                             if (confirm != true) return;
-                            await notifier.updateOrderStatus(
-                              order.id,
-                              OrderStatusModel.dibatalkan,
-                            );
-                            // ✅ Auto-chat terima
+
+                            await notifier.acceptOrder(order.id);
                             chatNotifier.sendMessage(
                               '✅ Pesanan kamu telah diterima! Sedang kami siapkan dan akan segera diantar.',
                               ChatSender.admin,
@@ -595,22 +601,6 @@ class _OrderCard extends ConsumerWidget {
                               title: 'Pesanan Diterima ✅',
                               message:
                                   'Pesanan #${order.id.substring(8)} sedang diproses oleh restoran.',
-                              orderId: order.id,
-                            );
-                            if (confirm != true) return;
-                            await notifier.updateOrderStatus(
-                              order.id,
-                              OrderStatusModel.dibatalkan,
-                            );
-                            // ✅ Tambahkan ini
-                            chatNotifier.sendMessage(
-                              '❌ Maaf, pesanan kamu tidak dapat kami terima saat ini. Silakan coba lagi nanti.',
-                              ChatSender.admin,
-                            );
-                            notifNotifier.addNotification(
-                              title: 'Pesanan Ditolak',
-                              message:
-                                  'Maaf, pesanan #${order.id.substring(8)} tidak dapat kami proses saat ini.',
                               orderId: order.id,
                             );
                           },
@@ -790,6 +780,11 @@ class _OrderCard extends ConsumerWidget {
                         );
                         if (confirm != true) return;
                         await notifier.completeOrder(order.id);
+                        chatNotifier.sendMessage(
+                          '✅ Pesanan kamu telah selesai diterima. Terima kasih sudah memesan!',
+                          ChatSender.admin,
+                        );
+
                         notifNotifier.addNotification(
                           title: 'Pesanan Selesai ✅',
                           message:

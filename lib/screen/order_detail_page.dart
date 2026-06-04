@@ -231,7 +231,9 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 .cast<String>(),
           );
 
-      ref.read(cartProvider.notifier).clearCart();
+      ref
+          .read(cartProvider.notifier)
+          .removeCheckedOutItems(widget.items.map((e) => e.id).toList());
       ref.read(checkoutProvider.notifier).clearCheckout();
 
       if (!mounted) return;

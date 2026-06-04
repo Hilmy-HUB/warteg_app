@@ -19,9 +19,7 @@ class CartNotifier extends StateNotifier<List<CartItemModel>> {
     if (data != null) {
       final List decoded = jsonDecode(data);
 
-      state = decoded
-          .map((e) => CartItemModel.fromJson(e))
-          .toList();
+      state = decoded.map((e) => CartItemModel.fromJson(e)).toList();
     }
   }
 
@@ -30,8 +28,7 @@ class CartNotifier extends StateNotifier<List<CartItemModel>> {
   Future<void> saveCart() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final encoded =
-        jsonEncode(state.map((e) => e.toJson()).toList());
+    final encoded = jsonEncode(state.map((e) => e.toJson()).toList());
 
     await prefs.setString('cart_items', encoded);
   }
@@ -42,7 +39,8 @@ class CartNotifier extends StateNotifier<List<CartItemModel>> {
     final index = state.indexWhere(
       (element) =>
           element.menuName == item.menuName &&
-          element.addOns.map((a) => a.name).join(', ') == item.addOns.map((a) => a.name).join(', '),
+          element.addOns.map((a) => a.name).join(', ') ==
+              item.addOns.map((a) => a.name).join(', '),
     );
 
     // kalau item sama → quantity ditambah
@@ -106,17 +104,21 @@ class CartNotifier extends StateNotifier<List<CartItemModel>> {
     saveCart();
   }
 
+  // ================= REMOVE CHECKED OUT ITEMS =================
+
+  void removeCheckedOutItems(List<String> ids) {
+    state = state.where((item) => !ids.contains(item.id)).toList();
+    saveCart();
+  }
+  
+
   // ================= TOTAL PRICE =================
 
   int get totalCartPrice {
-    return state.fold(
-      0,
-      (total, item) => total + item.totalHarga,
-    );
+    return state.fold(0, (total, item) => total + item.totalHarga);
   }
 }
 
-final cartProvider =
-    StateNotifierProvider<CartNotifier, List<CartItemModel>>(
+final cartProvider = StateNotifierProvider<CartNotifier, List<CartItemModel>>(
   (ref) => CartNotifier(),
 );

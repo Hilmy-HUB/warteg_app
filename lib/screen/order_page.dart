@@ -35,11 +35,11 @@ class _OrderPageState extends ConsumerState<OrderPage>
     OrderStatusModel.selesai,
     OrderStatusModel.dibatalkan,
   ];
-  
+
   void _showChatOrderPicker(BuildContext context, List<OrderModel> orders) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // ✅ tambah ini
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -142,6 +142,24 @@ class _OrderPageState extends ConsumerState<OrderPage>
     timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
+
+    // Mark all read untuk order delivery yang sudah selesai/batal
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _markCompletedOrdersAsRead();
+    });
+  }
+
+  void _markCompletedOrdersAsRead() {
+    final allOrders = ref.read(orderProvider);
+    final completedOrders = allOrders.where(
+      (o) =>
+          o.deliveryType == 'delivery' &&
+          (o.status == OrderStatusModel.selesai ||
+              o.status == OrderStatusModel.dibatalkan),
+    );
+    for (final order in completedOrders) {
+      ref.read(chatProvider(order.id).notifier).markAllRead();
+    }
   }
 
   @override
@@ -151,7 +169,6 @@ class _OrderPageState extends ConsumerState<OrderPage>
     super.dispose();
   }
 
-  // ✅ Hanya delivery orders untuk tab content
   List<OrderModel> getOrdersByStatus(
     List<OrderModel> allOrders,
     OrderStatusModel status,
@@ -351,9 +368,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
                                         decoration: BoxDecoration(
                                           color: ColorTheme.buttonPrimary
                                               .withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            30,
-                                          ),
+                                          borderRadius: BorderRadius.circular(30),
                                         ),
                                         child: Text(
                                           '+ ${e.name}',
@@ -887,6 +902,9 @@ class _OrderPageState extends ConsumerState<OrderPage>
         .read(orderProvider.notifier)
         .updateOrderStatus(order.id, OrderStatusModel.dibatalkan);
 
+    // Mark chat order ini sebagai read langsung
+    ref.read(chatProvider(order.id).notifier).markAllRead();
+
     ref.listenManual<OrderStatusModel>(orderTabProvider, (previous, next) {
       final index = tabs.indexOf(next);
       if (index != -1 && _tabController.index != index) {
@@ -987,13 +1005,21 @@ class _OrderPageState extends ConsumerState<OrderPage>
         actions: [
           Consumer(
             builder: (_, ref, __) {
-              // ✅ Hanya delivery orders untuk tombol chat di halaman ini
               final deliveryOrders = ref
                   .watch(orderProvider)
                   .where((o) => o.deliveryType == 'delivery')
                   .toList();
 
-              final totalUnread = deliveryOrders.fold<int>(
+              // Hanya hitung unread dari order yang masih aktif
+              final activeDeliveryOrders = deliveryOrders
+                  .where(
+                    (o) =>
+                        o.status != OrderStatusModel.selesai &&
+                        o.status != OrderStatusModel.dibatalkan,
+                  )
+                  .toList();
+
+              final totalUnread = activeDeliveryOrders.fold<int>(
                 0,
                 (sum, o) => sum + ref.watch(unreadAdminCountProvider(o.id)),
               );
@@ -1023,12 +1049,19 @@ class _OrderPageState extends ConsumerState<OrderPage>
                     } else if (activeOrders.isNotEmpty) {
                       _showChatOrderPicker(context, activeOrders);
                     } else {
-                      // Semua selesai/batal, buka order terakhir
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              UserChatPage(order: deliveryOrders.last),
+                      // Semua selesai/batal — tidak buka chat
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text(
+                            'Tidak ada pesanan aktif untuk di-chat',
+                            style: TextStyle(fontFamily: 'Poppins', fontSize: 13),
+                          ),
+                          backgroundColor: Colors.grey.shade700,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                         ),
                       );
                     }

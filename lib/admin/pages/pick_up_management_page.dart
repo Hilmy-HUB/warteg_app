@@ -553,22 +553,11 @@ class _PickupCard extends ConsumerWidget {
                               confirmColor: Colors.red,
                             );
                             if (confirm != true) return;
+
                             await notifier.updateOrderStatus(
                               order.id,
                               OrderStatusModel.dibatalkan,
                             );
-                            notifNotifier.addNotification(
-                              title: 'Pesanan Ditolak',
-                              message:
-                                  'Maaf, pesanan pickup #${order.id.substring(8)} tidak dapat kami proses.',
-                              orderId: order.id,
-                            );
-                            if (confirm != true) return;
-                            await notifier.updateOrderStatus(
-                              order.id,
-                              OrderStatusModel.dibatalkan,
-                            );
-                            // ✅ Tambahkan ini
                             chatNotifier.sendMessage(
                               '❌ Maaf, pesanan pickup kamu tidak dapat kami terima saat ini. Silakan coba lagi nanti.',
                               ChatSender.admin,
