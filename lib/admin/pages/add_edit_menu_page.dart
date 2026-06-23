@@ -422,12 +422,19 @@ class _AddEditMenuPageState extends ConsumerState<AddEditMenuPage> {
                                     child: Stack(
                                       fit: StackFit.expand,
                                       children: [
-                                        Image.asset(
-                                          _selectedImagePath!,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              _placeholder(),
-                                        ),
+                                        _selectedImagePath!.startsWith('http')
+                                            ? Image.network(
+                                                _selectedImagePath!,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) =>
+                                                    _placeholder(),
+                                              )
+                                            : Image.asset(
+                                                _selectedImagePath!,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) =>
+                                                    _placeholder(),
+                                              ),
                                         Positioned(
                                           bottom: 10,
                                           right: 10,

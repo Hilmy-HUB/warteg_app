@@ -13,15 +13,30 @@ import 'package:warteg_app/model/order_status_model.dart';
 import 'package:warteg_app/provider/chat_provider.dart';
 import 'package:warteg_app/provider/order_provider.dart';
 import 'package:warteg_app/screen/welcome_page.dart';
+import 'package:warteg_app/services/auth_service.dart';
 import 'package:warteg_app/theme/color_theme.dart';
 
-class AdminDashboardPage extends ConsumerWidget {
+class AdminDashboardPage extends ConsumerStatefulWidget {
   const AdminDashboardPage({super.key});
 
+  @override
+  ConsumerState<AdminDashboardPage> createState() => _AdminDashboardPageState();
+}
+
+class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(orderProvider.notifier).loadOrders();
+    });
+  }
+
   Future<void> _logout(BuildContext context) async {
+    await AuthService().logout();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('admin_logged_in');
-    if (!context.mounted) return;
+    if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => WelcomePage()),
@@ -30,7 +45,7 @@ class AdminDashboardPage extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final orders = ref.watch(orderProvider);
     final currency = NumberFormat.currency(
       locale: 'id_ID',

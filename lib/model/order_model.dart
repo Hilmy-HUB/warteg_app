@@ -103,7 +103,7 @@ class OrderModel {
       'total': total,
       'sellerNote': sellerNote,
       'createdAt': createdAt.toIso8601String(),
-      'status': status.name,
+      'status': _statusToString(status),
       'vaNumber': vaNumber,
       'expiredAt': expiredAt.toIso8601String(),
       'cancelExpiredAt': cancelExpiredAt?.toIso8601String(),
@@ -117,27 +117,44 @@ class OrderModel {
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     return OrderModel(
-      id: json['id'],
-      items: (json['items'] as List)
-          .map((e) => CartItemModel.fromJson(e))
-          .toList(),
-      address: AddressModel.fromJson(json['address']),
+      id: json['id'] ?? '',
+      items: (json['items'] as List?)
+              ?.map((e) => CartItemModel.fromJson(e))
+              .toList() ??
+          [],
+      address: json['address'] != null
+          ? AddressModel.fromJson(json['address'])
+          : AddressModel(
+              id: 'pickup',
+              label: 'Pickup',
+              receiverName: 'Restoran',
+              phone: '',
+              fullAddress: 'Warteg Bahari — Jl. Raya Tapos No.102, Ciriung, Cibinong, Bogor',
+              note: 'Ambil di outlet',
+              isSelected: false,
+            ),
       paymentMethod: PaymentMethodModel(
-        name: json['paymentMethod']['name'],
-        image: json['paymentMethod']['image'],
-        isSelected: json['paymentMethod']['isSelected'] ?? false,
+        name: json['paymentMethod']?['name'] ?? '',
+        image: json['paymentMethod']?['image'] ?? '',
+        isSelected: json['paymentMethod']?['isSelected'] ?? false,
       ),
-      subtotal: json['subtotal'],
-      ongkir: json['ongkir'],
-      discount: json['discount'],
-      total: json['total'],
+      subtotal: json['subtotal'] ?? 0,
+      ongkir: json['ongkir'] ?? 0,
+      discount: json['discount'] ?? 0,
+      total: json['total'] ?? 0,
       sellerNote: json['sellerNote'] as String?,
-      createdAt: DateTime.parse(json['createdAt']),
-      status: OrderStatusModel.values.firstWhere(
-        (e) => e.name == json['status'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      status: _mapStatus(
+        json['status'] ?? 'belumBayar',
+        json['acceptedByAdmin'] as bool? ?? false,
+        json['deliveryType'] ?? 'delivery',
       ),
-      vaNumber: json['vaNumber'],
-      expiredAt: DateTime.parse(json['expiredAt']),
+      vaNumber: json['vaNumber'] as String?,
+      expiredAt: json['expiredAt'] != null
+          ? DateTime.parse(json['expiredAt'])
+          : DateTime.now(),
       cancelExpiredAt: json['cancelExpiredAt'] != null
           ? DateTime.parse(json['cancelExpiredAt'])
           : null,
@@ -147,5 +164,47 @@ class OrderModel {
           : null,
       deliveryType: json['deliveryType'] ?? 'delivery',
     );
+  }
+
+  static OrderStatusModel _mapStatus(String statusStr, bool acceptedByAdmin, String deliveryType) {
+    switch (statusStr) {
+      case 'belumBayar':
+      case 'bayar':
+        return OrderStatusModel.bayar;
+      case 'diproses':
+        return acceptedByAdmin
+            ? OrderStatusModel.diproses
+            : OrderStatusModel.tungguKonfirmasi;
+      case 'diantar':
+        return deliveryType == 'pickup'
+            ? OrderStatusModel.siapDiambil
+            : OrderStatusModel.diantar;
+      case 'selesiai':
+      case 'selesai':
+        return OrderStatusModel.selesai;
+      case 'dibatalkan':
+        return OrderStatusModel.dibatalkan;
+      default:
+        return OrderStatusModel.tungguKonfirmasi;
+    }
+  }
+
+  static String _statusToString(OrderStatusModel st) {
+    switch (st) {
+      case OrderStatusModel.bayar:
+        return 'belumBayar';
+      case OrderStatusModel.tungguKonfirmasi:
+      case OrderStatusModel.diproses:
+        return 'diproses';
+      case OrderStatusModel.diantar:
+      case OrderStatusModel.siapDiambil:
+        return 'diantar';
+      case OrderStatusModel.selesai:
+        return 'selesai';
+      case OrderStatusModel.dibatalkan:
+        return 'dibatalkan';
+      default:
+        return 'belumBayar';
+    }
   }
 }

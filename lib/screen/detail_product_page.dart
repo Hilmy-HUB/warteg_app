@@ -64,11 +64,31 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
       );
     }
     if (url.startsWith('http')) {
-      return Image.asset(url,
-          width: double.infinity, height: 380, fit: BoxFit.cover);
+      return Image.network(
+        url,
+        width: double.infinity,
+        height: 380,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          width: double.infinity,
+          height: 380,
+          color: Colors.grey.shade200,
+          child: const Icon(Icons.fastfood, size: 80, color: Colors.grey),
+        ),
+      );
     }
-    return Image.asset(url,
-        width: double.infinity, height: 380, fit: BoxFit.cover);
+    return Image.asset(
+      url,
+      width: double.infinity,
+      height: 380,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(
+        width: double.infinity,
+        height: 380,
+        color: Colors.grey.shade200,
+        child: const Icon(Icons.fastfood, size: 80, color: Colors.grey),
+      ),
+    );
   }
 
   Widget buildAddOn({
@@ -171,6 +191,7 @@ class _DetailProductPageState extends ConsumerState<DetailProductPage> {
             onPressed: () {
               final cartItem = CartItemModel(
                 id: UniqueKey().toString(),
+                productId: widget.product.id,
                 menuName: widget.product.name,
                 image: widget.product.imageUrl ?? '',
                 basePrice: widget.product.price.toInt(),

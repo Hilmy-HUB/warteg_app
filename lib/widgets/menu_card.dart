@@ -37,17 +37,29 @@ class MenuCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: menu.imageUrl != null
                     ? (menu.imageUrl!.startsWith('http')
-                        ? Image.asset(
+                        ? Image.network(
                             menu.imageUrl!,
                             height: 140,
                             width: double.infinity,
                             fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              height: 140,
+                              width: double.infinity,
+                              color: Colors.grey.shade200,
+                              child: const Icon(Icons.fastfood, color: Colors.grey),
+                            ),
                           )
                         : Image.asset(
                             menu.imageUrl!,
                             height: 140,
                             width: double.infinity,
                             fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              height: 140,
+                              width: double.infinity,
+                              color: Colors.grey.shade200,
+                              child: const Icon(Icons.fastfood, color: Colors.grey),
+                            ),
                           ))
                     : Container(
                         height: 140,

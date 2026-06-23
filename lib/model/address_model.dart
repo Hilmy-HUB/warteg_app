@@ -42,7 +42,8 @@ class AddressModel {
       'id': id,
       'label': label,
       'receiverName': receiverName,
-      'phone': phone,
+      'phoneNumber': phone, // Aligned to backend 'phoneNumber'
+      'phone': phone,       // Fallback for local uses
       'fullAddress': fullAddress,
       'note': note,
       'isSelected': isSelected,
@@ -54,7 +55,7 @@ class AddressModel {
       id: json['id'] ?? '',
       label: json['label'] ?? '',
       receiverName: json['receiverName'] ?? '',
-      phone: json['phone'] ?? '',
+      phone: json['phoneNumber'] ?? json['phone'] ?? '', // Handles both phoneNumber (backend) and phone (local/legacy)
       fullAddress: json['fullAddress'] ?? '',
       note: json['note'] ?? '',
       isSelected: json['isSelected'] ?? false,

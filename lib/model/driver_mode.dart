@@ -50,13 +50,13 @@ class DriverModel {
       };
 
   factory DriverModel.fromJson(Map<String, dynamic> json) => DriverModel(
-        id: json['id'],
-        name: json['name'],
-        phone: json['phone'],
-        vehicleNumber: json['vehicleNumber'],
-        vehicleType: json['vehicleType'],
-        photoUrl: json['photoUrl'],
-        rating: (json['rating'] as num).toDouble(),
+        id: json['id'] ?? '',
+        name: json['name'] ?? '',
+        phone: json['phone'] ?? '',
+        vehicleNumber: json['vehicleNumber'] ?? '',
+        vehicleType: json['vehicleType'] ?? 'Motor',
+        photoUrl: json['photoUrl'] as String?,
+        rating: json['rating'] != null ? (json['rating'] as num).toDouble() : 5.0,
       );
 
   // Pool driver dummy — di production ganti dengan fetch dari backend

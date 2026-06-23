@@ -50,118 +50,28 @@ class _MyAccountPageState
   }
 
   Future<void> saveChanges() async {
-    final currentUser =
-        ref.read(currentUserProvider);
-
+    final currentUser = ref.read(currentUserProvider);
     if (currentUser == null) return;
 
     setState(() {
       isLoading = true;
     });
 
-    final prefs =
-        await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
-    final usersString =
-        prefs.getString('users');
+    // UPDATE CURRENT USER DATA LOCALLY
+    final updatedUser = Map<String, dynamic>.from(currentUser);
+    updatedUser['username'] = usernameController.text.trim();
+    updatedUser['phone'] = phoneController.text.trim();
 
-    if (usersString == null) {
-      setState(() {
-        isLoading = false;
-      });
-      return;
-    }
-
-    List users = jsonDecode(usersString);
-
-    final index = users.indexWhere(
-      (u) =>
-          u['email'] ==
-          currentUser['email'],
-    );
-
-    if (index == -1) {
-      setState(() {
-        isLoading = false;
-      });
-      return;
-    }
-
-    // VALIDASI PASSWORD
-    if (oldPasswordController
-            .text.isNotEmpty ||
-        newPasswordController
-            .text.isNotEmpty) {
-      if (oldPasswordController.text !=
-          users[index]['password']) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
-          const SnackBar(
-            content:
-                Text('Password lama salah'),
-            backgroundColor: Colors.red,
-          ),
-        );
-
-        setState(() {
-          isLoading = false;
-        });
-
-        return;
-      }
-
-      if (newPasswordController
-              .text.length <
-          8) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Password minimal 8 karakter',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-
-        setState(() {
-          isLoading = false;
-        });
-
-        return;
-      }
-
-      users[index]['password'] =
-          newPasswordController.text;
-    }
-
-    // UPDATE DATA
-    users[index]['username'] =
-        usernameController.text.trim();
-
-    users[index]['phone'] =
-        phoneController.text.trim();
-
-    // SAVE USERS
-    await prefs.setString(
-      'users',
-      jsonEncode(users),
-    );
-
-    // UPDATE CURRENT USER
-    final updatedUser = users[index];
-
+    // SAVE TO PREFS
     await prefs.setString(
       'current_user',
       jsonEncode(updatedUser),
     );
 
-    ref.read(currentUserProvider.notifier)
-        .state = {
-      'username':
-          updatedUser['username'],
-      'email': updatedUser['email'],
-      'phone': updatedUser['phone'],
-    };
+    // UPDATE RIVERPOD STATE
+    ref.read(currentUserProvider.notifier).state = updatedUser;
 
     setState(() {
       isLoading = false;
@@ -170,11 +80,9 @@ class _MyAccountPageState
     oldPasswordController.clear();
     newPasswordController.clear();
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-            'Profile berhasil diperbarui'),
+        content: Text('Profile berhasil diperbarui'),
         backgroundColor: Colors.green,
       ),
     );

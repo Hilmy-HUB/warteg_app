@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:warteg_app/services/auth_service.dart';
 
 final authServiceProvider = Provider((ref) => AuthService());
@@ -43,54 +40,21 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   // LOGIN
   // ======================================
 
-  // 🔐 Hardcode admin credentials
-  static const String _adminEmail = 'admin@warteg.com';
-  static const String _adminPassword = 'admin123';
-
   Future<String?> login(String email, String password) async {
     try {
       state = const AsyncLoading();
 
-      String role;
-      String username;
+      final result = await _service.login(email: email, password: password);
+      if (result != null) return result;
 
-      // ✅ Cek apakah admin
-      if (email == _adminEmail && password == _adminPassword) {
-        role = 'admin';
-        username = 'Admin';
-      } else {
-        final result = await _service.login(email: email, password: password);
-        if (result != null) return result;
-
-        role = 'user';
-
-        // Ambil username dari data register
-        final prefsTemp = await SharedPreferences.getInstance();
-        final usersString = prefsTemp.getString('users');
-        username = email.split('@')[0]; // fallback jika data tidak ditemukan
-
-        if (usersString != null) {
-          final List users = jsonDecode(usersString);
-          final userData = users.firstWhere(
-            (u) => u['email'] == email,
-            orElse: () => null,
-          );
-          if (userData != null) username = userData['username'] ?? username;
-        }
-      }
-
-      // Simpan ke SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLogin', true);
-      await prefs.setString('email', email);
-      await prefs.setString('username', username);
-      await prefs.setString('role', role);
+      final user = _service.currentUser;
+      if (user == null) return "Terjadi kesalahan saat memuat data profil";
 
       // Update provider
       ref.read(currentUserProvider.notifier).state = {
-        'username': username,
-        'email': email,
-        'role': role,
+        'username': user['username'],
+        'email': user['email'],
+        'role': user['role'],
       };
 
       return null; // sukses
@@ -106,8 +70,7 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   // ======================================
 
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await _service.logout();
     ref.read(currentUserProvider.notifier).state = null;
   }
 }

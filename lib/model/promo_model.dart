@@ -21,7 +21,7 @@ class PromoModel {
     int? discountPercent,
     bool? freeShipping,
     bool? isActive,
-    int? minPurchase
+    int? minPurchase,
   }) =>
       PromoModel(
         code: code ?? this.code,
@@ -31,4 +31,26 @@ class PromoModel {
         isActive: isActive ?? this.isActive,
         minPurchase: minPurchase ?? this.minPurchase,
       );
+
+  factory PromoModel.fromJson(Map<String, dynamic> json) {
+    return PromoModel(
+      code: json['code'] ?? '',
+      title: json['title'] ?? '',
+      discountPercent: json['discountPercent'] ?? 0,
+      freeShipping: json['freeShipping'] ?? false,
+      isActive: json['isActive'] ?? true,
+      minPurchase: json['minPurchase'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'code': code,
+      'title': title,
+      'discountPercent': discountPercent,
+      'freeShipping': freeShipping,
+      'isActive': isActive,
+      'minPurchase': minPurchase,
+    };
+  }
 }

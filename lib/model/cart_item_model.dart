@@ -2,6 +2,7 @@ import 'package:warteg_app/model/addon_model.dart';
 
 class CartItemModel {
   final String id;
+  final String productId;
   final String menuName;
   final String image;
   final int basePrice;
@@ -12,6 +13,7 @@ class CartItemModel {
 
   CartItemModel({
     required this.id,
+    required this.productId,
     required this.menuName,
     required this.image,
     required this.basePrice,
@@ -33,6 +35,7 @@ class CartItemModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'productId': productId,
       'menuName': menuName,
       'image': image,
       'basePrice': basePrice,
@@ -45,15 +48,17 @@ class CartItemModel {
 
   factory CartItemModel.fromJson(Map<String, dynamic> json) {
     return CartItemModel(
-      id: json['id'],
-      menuName: json['menuName'],
-      image: json['image'],
-      basePrice: json['basePrice'],
-      addOns: (json['addOns'] as List)
-          .map((e) => AddOnModel.fromJson(e))
-          .toList(),
-      quantity: json['quantity'],
-      notes: json['notes'],
+      id: json['id'] ?? '',
+      productId: json['productId'] ?? json['product_id'] ?? json['id'] ?? '',
+      menuName: json['menuName'] ?? json['menu_name'] ?? '',
+      image: json['imageUrl'] ?? json['image'] ?? '',
+      basePrice: json['price'] ?? json['basePrice'] ?? 0,
+      addOns: (json['addOns'] as List?)
+              ?.map((e) => AddOnModel.fromJson(e))
+              .toList() ??
+          [],
+      quantity: json['quantity'] ?? 1,
+      notes: json['notes'] ?? json['sellerNote'],
       isSelected: json['isSelected'] ?? true,
     );
   }

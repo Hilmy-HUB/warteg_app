@@ -864,22 +864,39 @@ class _ItemCard extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              item.image,
-              width: 78,
-              height: 78,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 78,
-                height: 78,
-                color: Colors.grey.shade100,
-                child: Icon(
-                  Icons.image_not_supported_rounded,
-                  color: Colors.grey.shade300,
-                  size: 28,
-                ),
-              ),
-            ),
+            child: item.image.startsWith('http')
+                ? Image.network(
+                    item.image,
+                    width: 78,
+                    height: 78,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 78,
+                      height: 78,
+                      color: Colors.grey.shade100,
+                      child: Icon(
+                        Icons.image_not_supported_rounded,
+                        color: Colors.grey.shade300,
+                        size: 28,
+                      ),
+                    ),
+                  )
+                : Image.asset(
+                    item.image,
+                    width: 78,
+                    height: 78,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 78,
+                      height: 78,
+                      color: Colors.grey.shade100,
+                      child: Icon(
+                        Icons.image_not_supported_rounded,
+                        color: Colors.grey.shade300,
+                        size: 28,
+                      ),
+                    ),
+                  ),
           ),
           const SizedBox(width: 14),
           Expanded(

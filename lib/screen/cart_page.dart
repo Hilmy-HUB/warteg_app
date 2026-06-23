@@ -365,22 +365,39 @@ class _CartItemCard extends StatelessWidget {
             // ── Image ──
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: Image.asset(
-                item.image,
-                width: 76,
-                height: 76,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 76,
-                  height: 76,
-                  color: Colors.grey.shade100,
-                  child: Icon(
-                    Icons.image_not_supported_rounded,
-                    color: Colors.grey.shade300,
-                    size: 26,
-                  ),
-                ),
-              ),
+              child: item.image.startsWith('http')
+                  ? Image.network(
+                      item.image,
+                      width: 76,
+                      height: 76,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 76,
+                        height: 76,
+                        color: Colors.grey.shade100,
+                        child: Icon(
+                          Icons.image_not_supported_rounded,
+                          color: Colors.grey.shade300,
+                          size: 26,
+                        ),
+                      ),
+                    )
+                  : Image.asset(
+                      item.image,
+                      width: 76,
+                      height: 76,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 76,
+                        height: 76,
+                        color: Colors.grey.shade100,
+                        child: Icon(
+                          Icons.image_not_supported_rounded,
+                          color: Colors.grey.shade300,
+                          size: 26,
+                        ),
+                      ),
+                    ),
             ),
 
             const SizedBox(width: 12),

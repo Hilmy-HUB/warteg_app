@@ -1,72 +1,81 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:warteg_app/data/menu_data.dart';
 import 'package:warteg_app/model/menu_model.dart';
-
-const _kMenuKey = 'saved_menus';
+import 'package:warteg_app/services/api_service.dart';
 
 class MenuNotifier extends StateNotifier<List<MenuModel>> {
   MenuNotifier() : super([]) {
-    _load();
+    fetchMenus();
   }
 
-  // ── Persistence ───────────────────────────────────────────────────────────
-
-  Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_kMenuKey);
-    if (raw == null) {
-      // Pertama kali: pakai data awal
-      state = List.from(initialMenus);
-      await _save();
-    } else {
-      final List decoded = jsonDecode(raw);
-      state = decoded.map((e) => MenuModel.fromJson(e)).toList();
+  Future<void> fetchMenus() async {
+    try {
+      final List data = await ApiService.get('/api/products');
+      state = data.map((e) => MenuModel.fromJson(e)).toList();
+    } catch (e) {
+      state = [];
     }
-  }
-
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    final encoded = jsonEncode(state.map((m) => m.toJson()).toList());
-    await prefs.setString(_kMenuKey, encoded);
   }
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
 
-  void addMenu(MenuModel menu) {
-    state = [...state, menu];
-    _save();
+  Future<void> addMenu(MenuModel menu) async {
+    try {
+      final data = await ApiService.post('/api/products', {
+        'name': menu.name,
+        'description': menu.description,
+        'price': menu.price,
+        'category': menu.category.name,
+        'imageUrl': menu.imageUrl,
+      });
+      final newMenu = MenuModel.fromJson(data);
+      state = [...state, newMenu];
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  void updateMenu(MenuModel updated) {
-    state = [
-      for (final m in state)
-        if (m.id == updated.id) updated else m,
-    ];
-    _save();
+  Future<void> updateMenu(MenuModel updated) async {
+    try {
+      final data = await ApiService.put('/api/products/${updated.id}', {
+        'name': updated.name,
+        'description': updated.description,
+        'price': updated.price,
+        'category': updated.category.name,
+        'isAvailable': updated.isAvailable,
+        'imageUrl': updated.imageUrl,
+      });
+      final newMenu = MenuModel.fromJson(data);
+      state = [
+        for (final m in state)
+          if (m.id == updated.id) newMenu else m,
+      ];
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  void deleteMenu(String id) {
-    state = state.where((m) => m.id != id).toList();
-    _save();
+  Future<void> deleteMenu(String id) async {
+    try {
+      await ApiService.delete('/api/products/$id');
+      state = state.where((m) => m.id != id).toList();
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  void toggleAvailability(String id) {
-    state = [
-      for (final m in state)
-        if (m.id == id) m.copyWith(isAvailable: !m.isAvailable) else m,
-    ];
-    _save();
+  Future<void> toggleAvailability(String id) async {
+    try {
+      final menu = state.firstWhere((m) => m.id == id);
+      await updateMenu(menu.copyWith(isAvailable: !menu.isAvailable));
+    } catch (e) {
+      rethrow;
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   String generateId() {
-    final existingIds = state.map((m) => int.tryParse(m.id) ?? 0).toList();
-    final maxId =
-        existingIds.isEmpty ? 0 : existingIds.reduce((a, b) => a > b ? a : b);
-    return (maxId + 1).toString();
+    return DateTime.now().millisecondsSinceEpoch.toString();
   }
 
   List<MenuModel> byCategory(MenuCategory cat) =>

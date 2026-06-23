@@ -1,9 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod/legacy.dart';
+import 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:warteg_app/model/chat_message_model.dart';
+import 'package:warteg_app/services/api_service.dart';
+import 'package:warteg_app/services/auth_service.dart';
 
 final chatProvider =
     StateNotifierProvider.family<ChatNotifier, List<ChatMessageModel>, String>(
@@ -28,59 +33,83 @@ final unreadAdminCountProvider = Provider.family<int, String>((ref, orderId) {
 
 class ChatNotifier extends StateNotifier<List<ChatMessageModel>> {
   final String orderId;
-  static const _prefix = 'chat_';
+  WebSocketChannel? _channel;
+  StreamSubscription? _subscription;
 
   ChatNotifier(this.orderId) : super([]) {
     _load();
   }
 
-  String get _key => '$_prefix$orderId';
-
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
-    if (raw == null) return;
     try {
-      final list = (jsonDecode(raw) as List)
-          .map((e) => ChatMessageModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-      state = list;
-    } catch (_) {
-      // Data korup, reset
-      await prefs.remove(_key);
+      // 1. Fetch chat history from HTTP API
+      final List data = await ApiService.get('/api/chats?orderId=$orderId');
+      state = data.map((e) => ChatMessageModel.fromJson(e)).toList();
+    } catch (e) {
       state = [];
+    }
+
+    // 2. Connect WebSocket for real-time messages
+    _connectWebSocket();
+  }
+
+  Future<void> _connectWebSocket() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userString = prefs.getString(AuthService.currentUserKey);
+      if (userString == null) return;
+      final user = jsonDecode(userString);
+      final userId = user['id'];
+      if (userId == null) return;
+
+      // Connect to Go backend WebSocket room
+      final wsUrl = Uri.parse(
+        '${ApiService.wsBaseUrl}/ws/chat?orderId=$orderId&userId=$userId',
+      );
+
+      _channel = WebSocketChannel.connect(wsUrl);
+      _subscription = _channel?.stream.listen((message) {
+        try {
+          final decoded = jsonDecode(message);
+          if (decoded['type'] == 'chat') {
+            final chatData = decoded['data'] as Map<String, dynamic>;
+            final newMessage = ChatMessageModel.fromJson(chatData);
+            
+            // Deduplicate if already loaded
+            final exists = state.any((m) => m.id == newMessage.id);
+            if (!exists) {
+              state = [...state, newMessage];
+            }
+          }
+        } catch (err) {
+          debugPrint('WS error decoding message: $err');
+        }
+      }, onError: (err) {
+        debugPrint('WS stream error: $err');
+      }, onDone: () {
+        debugPrint('WS connection closed for room $orderId');
+      });
+    } catch (e) {
+      debugPrint('WS connection error: $e');
     }
   }
 
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _key,
-      jsonEncode(state.map((m) => m.toJson()).toList()),
-    );
-  }
-
   /// Kirim pesan biasa (dari admin atau user)
-  void sendMessage(String text, ChatSender sender) {
-    debugPrint('CHAT => room:$orderId sender:$sender text:$text');
-
-    state = [
-      ...state,
-      ChatMessageModel(
-        id: '${orderId}_${DateTime.now().microsecondsSinceEpoch}',
-        orderId: orderId,
-        text: text,
-        sender: sender,
-        createdAt: DateTime.now(),
-      ),
-    ];
-    _save(); // ✅ Simpan setelah kirim
+  Future<void> sendMessage(String text, ChatSender sender) async {
+    try {
+      // Post message to HTTP API
+      await ApiService.post('/api/chats', {
+        'orderId': orderId,
+        'text': text,
+      });
+      // Message will be broadcasted to WebSocket and added dynamically via stream listener
+    } catch (e) {
+      debugPrint('Failed to send chat message: $e');
+    }
   }
 
   /// Kirim system message (detail order otomatis, tampil sebagai info di tengah)
-  /// Hanya kirim sekali per order — cek dulu apakah sudah ada system message
   void sendSystemMessage(String text) {
-    // Cek apakah sudah ada system message untuk order ini
     final alreadySent = state.any((m) => m.isSystem);
     if (alreadySent) return;
 
@@ -96,33 +125,27 @@ class ChatNotifier extends StateNotifier<List<ChatMessageModel>> {
         isSystem: true,
       ),
     ];
-    _save();
   }
 
   /// Admin membaca semua pesan user
   void markAllRead() {
     state = state.map((m) => m.copyWith(isRead: true)).toList();
-    _save();
   }
 
   /// User membaca semua pesan admin
   void markAllUserRead() {
-    final updated = state
-        .map((m) => m.sender == ChatSender.admin ? m.copyWith(isRead: true) : m)
-        .toList();
-    final hasChange = state.any(
-      (m) => m.sender == ChatSender.admin && !m.isRead,
-    );
-    if (hasChange) {
-      state = updated;
-      _save();
-    }
+    state = state.map((m) => m.copyWith(isRead: true)).toList();
   }
 
-  /// Reset/hapus semua chat untuk order ini (untuk debugging / data korup)
+  /// Reset/hapus semua chat
   Future<void> clearChat() async {
     state = [];
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    _channel?.sink.close();
+    super.dispose();
   }
 }

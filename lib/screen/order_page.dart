@@ -145,6 +145,7 @@ class _OrderPageState extends ConsumerState<OrderPage>
 
     // Mark all read untuk order delivery yang sudah selesai/batal
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(orderProvider.notifier).loadOrders();
       _markCompletedOrdersAsRead();
     });
   }
@@ -310,25 +311,45 @@ class _OrderPageState extends ConsumerState<OrderPage>
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(18),
-                      child: Image.asset(
-                        item.image,
-                        width: 74,
-                        height: 74,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 74,
-                          height: 74,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Icon(
-                            Icons.image_not_supported_rounded,
-                            color: Colors.grey.shade300,
-                            size: 28,
-                          ),
-                        ),
-                      ),
+                      child: item.image.startsWith('http')
+                          ? Image.network(
+                              item.image,
+                              width: 74,
+                              height: 74,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 74,
+                                height: 74,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: Icon(
+                                  Icons.image_not_supported_rounded,
+                                  color: Colors.grey.shade300,
+                                  size: 28,
+                                ),
+                              ),
+                            )
+                          : Image.asset(
+                              item.image,
+                              width: 74,
+                              height: 74,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 74,
+                                height: 74,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: Icon(
+                                  Icons.image_not_supported_rounded,
+                                  color: Colors.grey.shade300,
+                                  size: 28,
+                                ),
+                              ),
+                            ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
